@@ -1,0 +1,4 @@
+- always study README.md first.
+- when implementing a change, add tests as needed and ensure they pass.
+- commit and push the code.
+- if follow-up work is needed, create additional issues via `bd create`.
