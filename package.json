@@ -1,0 +1,40 @@
+{
+  "name": "paste-as-simple-markdown",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A lightweight, modern web application designed for GitHub Pages that converts pasted rich text into clean Markdown and translates LaTeX equations into readable plaintext Unicode characters.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toumorokoshi/paste-as-simple-markdown.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/toumorokoshi/paste-as-simple-markdown/issues"
+  },
+  "homepage": "https://github.com/toumorokoshi/paste-as-simple-markdown#readme",
+  "dependencies": {
+    "marked": "^17.0.5",
+    "turndown": "^7.2.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "eslint-plugin-functional": "^9.0.4",
+    "globals": "^17.4.0",
+    "jsdom": "^29.0.1",
+    "prettier": "^3.8.1",
+    "vite": "^8.0.1",
+    "vitest": "^4.1.0"
+  }
+}

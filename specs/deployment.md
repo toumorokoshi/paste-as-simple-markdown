@@ -3,10 +3,12 @@
 To host this repository on GitHub Pages automatically, we will use a GitHub Actions workflow that triggers whenever changes are pushed to the `main` branch.
 
 ## Prerequisites
-* The local Git repository must be mapped to a remote GitHub repository.
-* GitHub Pages must be configured to use GitHub Actions instead of deploying from a specific branch.
+
+- The local Git repository must be mapped to a remote GitHub repository.
+- GitHub Pages must be configured to use GitHub Actions instead of deploying from a specific branch.
 
 ### GitHub Repository Settings Setup
+
 1. Navigate to your Repository on GitHub.
 2. Go to **Settings** > **Pages** (under the "Code and automation" sidebar section).
 3. Under **Build and deployment**, set the Source to **GitHub Actions**.
@@ -23,7 +25,7 @@ name: Deploy static content to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["main"]
+    branches: ['main']
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -37,7 +39,7 @@ permissions:
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 jobs:
@@ -49,23 +51,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload the entire repository root
           path: '.'
-          
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 ```
 
 ### Automated Process
+
 Once this configuration is committed and pushed, GitHub Actions will handle everything automatically:
+
 1. It triggers immediately on any push to `main`.
 2. It checks out the latest code and packages the root directory.
 3. It deploys the changes to GitHub Pages.

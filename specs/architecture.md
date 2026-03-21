@@ -15,13 +15,15 @@ This project must strictly adhere to specific coding paradigms that prioritize m
 6. **Fewer Comments**: The code must be self-explanatory. Name functions and variables explicitly. Only add comments for inherently complex regex interactions or non-obvious browser API quirks.
 
 ## Unit Testing
-* Tests must primarily run against the pure data-structure functions (e.g., `convertHtmlToMarkdown(htmlString)`, `replaceLatexWithUnicode(text)`).
-* Only write a single integration test that interacts with the IO layer (simulating a paste event and asserting the DOM updates correctly).
+
+- Tests must primarily run against the pure data-structure functions (e.g., `convertHtmlToMarkdown(htmlString)`, `replaceLatexWithUnicode(text)`).
+- Only write a single integration test that interacts with the IO layer (simulating a paste event and asserting the DOM updates correctly).
 
 ## Application Flow
+
 1. **IO Layer**: Listen for the `paste` event on the target element.
 2. **Extraction**: Retrieve the `text/html` payload.
 3. **Logic Pipeline**:
-    - `html_to_markdown`: Pipe the HTML through Turndown.
-    - `latex_to_plaintext`: Pipe the resulting text through custom LaTeX replacement strings.
+   - `html_to_markdown`: Pipe the HTML through Turndown.
+   - `latex_to_plaintext`: Pipe the resulting text through custom LaTeX replacement strings.
 4. **IO Layer**: Output the final string to the visual element, trigger the Marked.js rendering for the preview, and update the clipboard when requested.
