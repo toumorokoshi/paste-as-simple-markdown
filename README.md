@@ -24,8 +24,21 @@ This project emphasizes rigorous functional programming principles, strict separ
 
 ## Running Locally
 
-Since this app is built with pure HTML, CSS, and JS:
+To run the application locally for development:
 
 1. Clone the repository.
-2. Open `index.html` in any modern web browser.
-3. Alternatively, serve via a local HTTP server like `python3 -m http.server 8000`.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open the URL provided (usually `http://localhost:5173`) in your browser.
+
+Alternatively, you can build the project and serve the `dist` directory:
+```bash
+npm run build
+npm run preview
+```
