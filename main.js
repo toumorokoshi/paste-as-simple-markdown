@@ -1,31 +1,169 @@
 import TurndownService from 'turndown';
 import { marked } from 'marked';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-markdown';
 
 /**
  * Application Constants
  */
 const LATEX_SYMBOL_MAP = {
-  '\\\\alpha': 'α',
-  '\\\\beta': 'β',
-  '\\\\gamma': 'γ',
-  '\\\\theta': 'θ',
-  '\\\\pi': 'π',
-  '\\\\Gamma': 'Γ',
-  '\\\\times': '×',
-  '\\\\div': '÷',
-  '\\\\pm': '±',
-  '\\\\infty': '∞',
-  '\\\\approx': '≈',
-  '\\\\neq': '≠',
-  '\\\\le': '≤',
-  '\\\\leq': '≤',
-  '\\\\ge': '≥',
-  '\\\\geq': '≥',
-  '\\\\rightarrow': '→',
-  '\\\\Rightarrow': '⇒',
-  '\\\\int': '∫',
-  '\\\\sum': 'Σ',
-  '\\\\prod': 'Π'
+  // Greek Letters (Lowercase)
+  '\\alpha': 'α',
+  '\\beta': 'β',
+  '\\gamma': 'γ',
+  '\\delta': 'δ',
+  '\\epsilon': 'ϵ',
+  '\\zeta': 'ζ',
+  '\\eta': 'η',
+  '\\theta': 'θ',
+  '\\iota': 'ι',
+  '\\kappa': 'κ',
+  '\\lambda': 'λ',
+  '\\mu': 'μ',
+  '\\nu': 'ν',
+  '\\xi': 'ξ',
+  '\\pi': 'π',
+  '\\rho': 'ρ',
+  '\\sigma': 'σ',
+  '\\tau': 'τ',
+  '\\upsilon': 'υ',
+  '\\phi': 'φ',
+  '\\chi': 'χ',
+  '\\psi': 'ψ',
+  '\\omega': 'ω',
+  '\\varepsilon': 'ε',
+  '\\vartheta': 'ϑ',
+  '\\varkappa': 'ϰ',
+  '\\varpi': 'ϖ',
+  '\\varrho': 'ϱ',
+  '\\varsigma': 'ς',
+  '\\varphi': 'ϕ',
+
+  // Greek Letters (Uppercase)
+  '\\Gamma': 'Γ',
+  '\\Delta': 'Δ',
+  '\\Theta': 'Θ',
+  '\\Lambda': 'Λ',
+  '\\Xi': 'Ξ',
+  '\\Pi': 'Π',
+  '\\Sigma': 'Σ',
+  '\\Upsilon': 'Υ',
+  '\\Phi': 'Φ',
+  '\\Psi': 'Ψ',
+  '\\Omega': 'Ω',
+
+  // Binary Operators
+  '\\pm': '±',
+  '\\mp': '∓',
+  '\\times': '×',
+  '\\div': '÷',
+  '\\ast': '∗',
+  '\\star': '★',
+  '\\circ': '∘',
+  '\\bullet': '•',
+  '\\cdot': '⋅',
+  '\\cap': '∩',
+  '\\cup': '∪',
+  '\\uplus': '⊌',
+  '\\sqcap': '⊓',
+  '\\sqcup': '⊔',
+  '\\vee': '∨',
+  '\\wedge': '∧',
+  '\\setminus': '∖',
+  '\\wr': '≀',
+  '\\diamond': '⋄',
+  '\\bigtriangleup': '△',
+  '\\bigtriangledown': '▽',
+  '\\triangleleft': '◃',
+  '\\triangleright': '▹',
+  '\\oplus': '⊕',
+  '\\ominus': '⊖',
+  '\\otimes': '⊗',
+  '\\oslash': '⊘',
+  '\\odot': '⊙',
+  '\\dagger': '†',
+  '\\ddagger': '‡',
+  '\\amalg': '⨿',
+
+  // Relation Operators
+  '\\le': '≤',
+  '\\leq': '≤',
+  '\\ge': '≥',
+  '\\geq': '≥',
+  '\\equiv': '≡',
+  '\\sim': '∼',
+  '\\simeq': '≃',
+  '\\asymp': '≍',
+  '\\approx': '≈',
+  '\\cong': '≅',
+  '\\neq': '≠',
+  '\\doteq': '≐',
+  '\\propto': '∝',
+  '\\models': '⊧',
+  '\\perp': '⊥',
+  '\\mid': '|',
+  '\\parallel': '‖',
+  '\\subset': '⊂',
+  '\\supset': '⊃',
+  '\\subseteq': '⊆',
+  '\\supseteq': '⊇',
+  '\\in': '∈',
+  '\\ni': '∋',
+  '\\notin': '∉',
+
+  // Arrows
+  '\\leftarrow': '←',
+  '\\rightarrow': '→',
+  '\\leftrightarrow': '↔',
+  '\\Leftarrow': '⇐',
+  '\\Rightarrow': '⇒',
+  '\\Leftrightarrow': '⇔',
+  '\\uparrow': '↑',
+  '\\downarrow': '↓',
+  '\\updownarrow': '↕',
+  '\\Uparrow': '⇑',
+  '\\Downarrow': '⇓',
+  '\\Updownarrow': '⇕',
+  '\\nearrow': '↗',
+  '\\searrow': '↘',
+  '\\swarrow': '↙',
+  '\\nwarrow': '↖',
+  '\\mapsto': '↦',
+  '\\hookleftarrow': '↩',
+  '\\hookrightarrow': '↪',
+  '\\leftharpoonup': '↼',
+  '\\leftharpoondown': '↽',
+  '\\rightharpoonup': '⇀',
+  '\\rightharpoondown': '⇁',
+
+  // Miscellaneous Symbols
+  '\\aleph': 'ℵ',
+  '\\hbar': 'ℏ',
+  '\\imath': 'ı',
+  '\\jmath': 'ȷ',
+  '\\ell': 'ℓ',
+  '\\wp': '℘',
+  '\\Re': 'ℜ',
+  '\\Im': 'ℑ',
+  '\\partial': '∂',
+  '\\infty': '∞',
+  '\\prime': '′',
+  '\\emptyset': '∅',
+  '\\nabla': '∇',
+  '\\surd': '√',
+  '\\top': '⊤',
+  '\\bot': '⊥',
+  '\\angle': '∠',
+  '\\forall': '∀',
+  '\\exists': '∃',
+  '\\neg': '¬',
+  '\\flat': '♭',
+  '\\natural': '♮',
+  '\\sharp': '♯',
+  '\\clubsuit': '♣',
+  '\\diamondsuit': '♢',
+  '\\heartsuit': '♡',
+  '\\spadesuit': '♠'
 };
 
 const SUPERSCRIPT_MAP = {
@@ -41,8 +179,34 @@ const SUPERSCRIPT_MAP = {
   9: '⁹',
   '+': '⁺',
   '-': '⁻',
+  '=': '⁼',
+  '(': '⁽',
+  ')': '⁾',
+  a: 'ᵃ',
+  b: 'ᵇ',
+  c: 'ᶜ',
+  d: 'ᵈ',
+  e: 'ᵉ',
+  f: 'ᶠ',
+  g: 'ᵍ',
+  h: 'ʰ',
+  i: 'ⁱ',
+  j: 'ʲ',
+  k: 'ᵏ',
+  l: 'ˡ',
+  m: 'ᵐ',
   n: 'ⁿ',
-  i: 'ⁱ'
+  o: 'ᵒ',
+  p: 'ᵖ',
+  r: 'ʳ',
+  s: 'ˢ',
+  t: 'ᵗ',
+  u: 'ᵘ',
+  v: 'ᵛ',
+  w: 'ʷ',
+  x: 'ˣ',
+  y: 'ʸ',
+  z: 'ᶻ'
 };
 
 const SUBSCRIPT_MAP = {
@@ -56,17 +220,247 @@ const SUBSCRIPT_MAP = {
   7: '₇',
   8: '₈',
   9: '₉',
+  '+': '₊',
+  '-': '₋',
+  '=': '₌',
+  '(': '₍',
+  ')': '₎',
+  a: 'ₐ',
+  e: 'ₑ',
+  h: 'ₕ',
   i: 'ᵢ',
   j: 'ⱼ',
   k: 'ₖ',
   l: 'ₗ',
   m: 'ₘ',
-  n: 'ₙ'
+  n: 'ₙ',
+  o: 'ₒ',
+  p: 'ₚ',
+  r: 'ᵣ',
+  s: 'ₛ',
+  t: 'ₜ',
+  u: 'ᵤ',
+  v: 'ᵥ',
+  x: 'ₓ'
 };
+
+const TOAST_DURATION = 2000;
+const FADE_OUT_DURATION = 500;
+
+/**
+ * Regex Patterns
+ */
+const LATEX_LIMITS_REGEX =
+  /\\+(sum|int|prod)(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?|\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?)?/g;
+const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+)/g;
+const LATEX_SIMPLE_SUPERSCRIPT_REGEX =
+  /(\w|\))?\^({([a-zA-Z0-9+\-=()]+)}|([a-zA-Z0-9+\-=()]))/g;
+const LATEX_COMPLEX_SUPERSCRIPT_REGEX = /(\w|\))?\^{/;
+const LATEX_SIMPLE_SUBSCRIPT_REGEX =
+  /(\w|\))?_({([a-zA-Z0-9+=()]+)}|([a-zA-Z0-9+=()]))/g;
+const LATEX_COMPLEX_SUBSCRIPT_REGEX = /(\w|\))?_{/;
+const LATEX_FRAC_REGEX = /\\+frac\s*{/;
+const LATEX_SQRT_REGEX = /\\+sqrt\s*{/;
+
+/**
+ * UI Constants
+ */
+const MOON_ICON =
+  '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+const SUN_ICON = `
+  <circle cx="12" cy="12" r="5"></circle>
+  <line x1="12" y1="1" x2="12" y2="3"></line>
+  <line x1="12" y1="21" x2="12" y2="23"></line>
+  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+  <line x1="1" y1="12" x2="3" y2="12"></line>
+  <line x1="21" y1="12" x2="23" y2="12"></line>
+  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+`;
 
 /**
  * Pure Logic Functions
  */
+/**
+ * Finds the index of the matching closing brace starting from an opening brace.
+ * Returns -1 if no matching brace is found.
+ */
+const findClosingBrace = (text, openIndex) => {
+  let count = 0;
+  for (let i = openIndex; i < text.length; i++) {
+    if (text[i] === '{') count++;
+    else if (text[i] === '}') {
+      count--;
+      if (count === 0) return i;
+    }
+  }
+  return -1;
+};
+
+/**
+ * Replaces LaTeX commands with balanced braces recursively.
+ */
+const replaceRecursiveCommand = (text, commandRegex, processor) => {
+  let result = text;
+  let searchIndex = 0;
+  while (true) {
+    const remainingText = result.substring(searchIndex);
+    const match = remainingText.match(commandRegex);
+    if (!match) break;
+
+    const startIndex = searchIndex + match.index;
+    const firstBraceIndex = result.indexOf('{', startIndex);
+    if (firstBraceIndex === -1) {
+      searchIndex = startIndex + 1;
+      continue;
+    }
+
+    const firstClosingBraceIndex = findClosingBrace(result, firstBraceIndex);
+    if (firstClosingBraceIndex === -1) {
+      searchIndex = startIndex + 1;
+      continue;
+    }
+
+    const arg1 = result.substring(firstBraceIndex + 1, firstClosingBraceIndex);
+    let lastIndex = firstClosingBraceIndex;
+    let replacement;
+
+    if (commandRegex.source.includes('frac')) {
+      const remaining = result.substring(firstClosingBraceIndex + 1);
+      const secondBraceMatch = remaining.match(/^\s*{/);
+      if (secondBraceMatch) {
+        const secondBraceIndex =
+          firstClosingBraceIndex + 1 + remaining.indexOf('{');
+        const secondClosingBraceIndex = findClosingBrace(
+          result,
+          secondBraceIndex
+        );
+        if (secondClosingBraceIndex !== -1) {
+          const arg2 = result.substring(
+            secondBraceIndex + 1,
+            secondClosingBraceIndex
+          );
+          replacement = processor(match, arg1, arg2);
+          lastIndex = secondClosingBraceIndex;
+        }
+      }
+
+      if (replacement === undefined) {
+        searchIndex = startIndex + 1;
+        continue;
+      }
+    } else {
+      replacement = processor(match, arg1);
+    }
+
+    if (replacement !== undefined) {
+      result =
+        result.substring(0, startIndex) +
+        replacement +
+        result.substring(lastIndex + 1);
+      // Reset searchIndex to 0 to catch nested structures from the inside out or outside in
+      searchIndex = 0;
+    } else {
+      searchIndex = startIndex + 1;
+    }
+  }
+  return result;
+};
+
+/**
+ * Formats LaTeX operator limits into a Unicode string.
+ * @param {string} op Operator (sum, int, prod)
+ * @param {string} lower Lower limit
+ * @param {string} upper Upper limit
+ * @returns {string}
+ */
+const formatLimits = (op, lower, upper) => {
+  const unicodeOp = { sum: 'Σ', int: '∫', prod: 'Π' }[op];
+  if (lower && upper) return `${unicodeOp}(${lower} to ${upper})`;
+  if (lower) return `${unicodeOp}(${lower})`;
+  if (upper) return `${unicodeOp}(to ${upper})`;
+  return unicodeOp;
+};
+
+/**
+ * Returns the first truthy value from a list of arguments.
+ * @param {...any} args
+ * @returns {any}
+ */
+const getFirstValue = (...args) => args.find((arg) => !!arg);
+
+/**
+ * Maps a string of characters to their Unicode equivalents if all characters are in the map.
+ * @param {string} str
+ * @param {Object} map
+ * @returns {string|undefined}
+ */
+const mapString = (str, map) => {
+  const chars = Array.from(str);
+  const mapped = chars.map((c) => map[c]);
+  if (mapped.every((c) => c !== undefined)) {
+    return mapped.join('');
+  }
+  return undefined;
+};
+
+/**
+ * Handles LaTeX operator limits (\sum, \int, \prod).
+ * @param {string} text
+ * @returns {string}
+ */
+const handleLimits = (text) =>
+  text.replace(
+    LATEX_LIMITS_REGEX,
+    (match, op, l1, l2, u1, u2, u3, u4, l3, l4) =>
+      formatLimits(
+        op,
+        getFirstValue(l1, l2, l3, l4),
+        getFirstValue(u1, u2, u3, u4)
+      )
+  );
+
+/**
+ * Handles LaTeX symbols mapping.
+ * @param {string} text
+ * @returns {string}
+ */
+const handleSymbols = (text) =>
+  text.replace(LATEX_SYMBOL_REGEX, (match, command) => {
+    const symbol = LATEX_SYMBOL_MAP[`\\${command}`];
+    return symbol || match;
+  });
+
+/**
+ * Handles simple superscripts.
+ * @param {string} text
+ * @returns {string}
+ */
+const handleSimpleSuperscripts = (text) =>
+  text.replace(
+    LATEX_SIMPLE_SUPERSCRIPT_REGEX,
+    (match, base, fullExp, innerExp, singleExp) => {
+      const char = innerExp || singleExp;
+      const mapped = mapString(char, SUPERSCRIPT_MAP);
+      return (base || '') + (mapped || '^(' + char + ')');
+    }
+  );
+
+/**
+ * Handles simple subscripts.
+ * @param {string} text
+ * @returns {string}
+ */
+const handleSimpleSubscripts = (text) =>
+  text.replace(
+    LATEX_SIMPLE_SUBSCRIPT_REGEX,
+    (match, base, fullSub, innerSub, singleSub) => {
+      const char = innerSub || singleSub;
+      const mapped = mapString(char, SUBSCRIPT_MAP);
+      return (base || '') + (mapped || '_(' + char + ')');
+    }
+  );
 
 /**
  * Replaces LaTeX commands with Unicode equivalents.
@@ -74,52 +468,39 @@ const SUBSCRIPT_MAP = {
  * @returns {string}
  */
 export const convertLatexToUnicode = (text) => {
-  // 1. Map simple symbols
-  const withSymbols = Object.entries(LATEX_SYMBOL_MAP).reduce(
-    (acc, [key, val]) => acc.replace(new RegExp(key, 'g'), val),
-    text
-  );
+  const step0 = handleLimits(text);
+  const step1 = handleSymbols(step0);
+  const step2 = handleSimpleSuperscripts(step1);
 
-  // 2. Handle simple superscripts (e.g., x^2 -> x² or x^{2} -> x²)
-  const withSimpleSupers = withSymbols.replace(
-    /(\w|\))?\^({([0-9+\-ni])}|([0-9+\-ni]))/g,
-    (match, base, fullExp, innerExp, singleExp) => {
-      const char = innerExp || singleExp;
-      const superChar = SUPERSCRIPT_MAP[char];
-      return (base || '') + (superChar || '^(' + char + ')');
+  const step2b = replaceRecursiveCommand(
+    step2,
+    LATEX_COMPLEX_SUPERSCRIPT_REGEX,
+    (match, arg) => {
+      const base = match[1] || '';
+      return `${base}^(${arg})`;
     }
   );
 
-  // Handle complex superscripts e.g. x^{a+b} -> x^(a+b)
-  const withComplexSupers = withSimpleSupers.replace(
-    /(\w|\))?\^{([^}]*)}/g,
-    '$1^($2)'
-  );
+  const step3 = handleSimpleSubscripts(step2b);
 
-  // 3. Handle simple subscripts (e.g., x_i -> xᵢ or x_{i} -> xᵢ)
-  const withSimpleSubs = withComplexSupers.replace(
-    /(\w|\))?_({([0-9ijk-mn])}|([0-9ijk-mn]))/g,
-    (match, base, fullSub, innerSub, singleSub) => {
-      const char = innerSub || singleSub;
-      const subChar = SUBSCRIPT_MAP[char];
-      return (base || '') + (subChar || '_(' + char + ')');
+  const step3b = replaceRecursiveCommand(
+    step3,
+    LATEX_COMPLEX_SUBSCRIPT_REGEX,
+    (match, arg) => {
+      const base = match[1] || '';
+      return `${base}_(${arg})`;
     }
   );
 
-  // Handle complex subscripts e.g. x_{i,j} -> x_(i,j)
-  const withComplexSubs = withSimpleSubs.replace(
-    /(\w|\))?_{([^}]*)}/g,
-    '$1_($2)'
+  const step4 = replaceRecursiveCommand(
+    step3b,
+    LATEX_FRAC_REGEX,
+    (match, arg1, arg2) => `(${arg1})/(${arg2})`
   );
 
-  // 4. Handle fractions \frac{A}{B} -> (A)/(B)
-  const withFractions = withComplexSubs.replace(
-    /\\frac\s*{([^}]*)}\s*{([^}]*)}/g,
-    '($1)/($2)'
+  return replaceRecursiveCommand(step4, LATEX_SQRT_REGEX, (match, arg) =>
+    arg.length === 1 ? `√${arg}` : `√(${arg})`
   );
-
-  // 5. Handle square roots \sqrt{x} -> √x
-  return withFractions.replace(/\\sqrt\s*{([^}]*)}/g, '√($1)');
 };
 
 /**
@@ -150,29 +531,81 @@ export const transformContent = (html) => {
  */
 
 /**
+ * Saves the current cursor position in a contenteditable element.
+ * @param {HTMLElement} element
+ * @returns {number} The current cursor offset
+ */
+const saveCursorPosition = (element) => {
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return 0;
+  const range = selection.getRangeAt(0);
+  const preSelectionRange = range.cloneRange();
+  preSelectionRange.selectNodeContents(element);
+  preSelectionRange.setEnd(range.startContainer, range.startOffset);
+  return preSelectionRange.toString().length;
+};
+
+/**
+ * Restores the cursor position in a contenteditable element.
+ * @param {HTMLElement} element
+ * @param {number} offset The cursor offset to restore
+ */
+const restoreCursorPosition = (element, offset) => {
+  const findNodeAtOffset = (root, targetOffset) => {
+    const traverse = (node, currentOffset) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const nextOffset = currentOffset + node.length;
+        return targetOffset <= nextOffset
+          ? { node, offset: targetOffset - currentOffset }
+          : { nextOffset };
+      }
+
+      return Array.from(node.childNodes).reduce(
+        (acc, child) => (acc.node ? acc : traverse(child, acc.nextOffset)),
+        { nextOffset: currentOffset }
+      );
+    };
+    return traverse(root, 0);
+  };
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  const result = findNodeAtOffset(element, offset);
+
+  if (result.node) {
+    range.setStart(result.node, result.offset);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+};
+
+/**
+ * Applies syntax highlighting to a contenteditable element using Prism.js.
+ * @param {HTMLElement} element
+ */
+const highlightMarkdown = (element) => {
+  const offset = saveCursorPosition(element);
+  const text = element.textContent;
+  const highlighted = Prism.highlight(
+    text,
+    Prism.languages.markdown,
+    'markdown'
+  );
+  element.innerHTML = highlighted;
+  restoreCursorPosition(element, offset);
+};
+
+/**
  * Updates the theme toggle icon based on the current theme.
  * @param {HTMLElement} icon
  * @param {string} theme
  */
 const updateThemeIcon = (icon, theme) => {
   if (theme === 'dark') {
-    // Moon icon
-    icon.innerHTML = `
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-    `;
+    icon.innerHTML = MOON_ICON;
   } else {
-    // Sun icon
-    icon.innerHTML = `
-      <circle cx="12" cy="12" r="5"></circle>
-      <line x1="12" y1="1" x2="12" y2="3"></line>
-      <line x1="12" y1="21" x2="12" y2="23"></line>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-      <line x1="1" y1="12" x2="3" y2="12"></line>
-      <line x1="21" y1="12" x2="23" y2="12"></line>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-    `;
+    icon.innerHTML = SUN_ICON;
   }
 };
 
@@ -202,8 +635,40 @@ const showToast = (message) => {
 
   setTimeout(() => {
     toast.classList.add('fade-out');
-    setTimeout(() => toast.remove(), 500);
-  }, 2000);
+    setTimeout(() => toast.remove(), FADE_OUT_DURATION);
+  }, TOAST_DURATION);
+};
+
+/**
+ * Populates the symbol list in the Help modal.
+ * @param {HTMLElement} container
+ */
+const populateSymbolList = (container) => {
+  const items = [];
+
+  // Add examples of structural operators first
+  const examples = [
+    { cmd: 'x^2', res: 'x²' },
+    { cmd: 'x_i', res: 'xᵢ' },
+    { cmd: '\\frac{a}{b}', res: '(a)/(b)' },
+    { cmd: '\\sqrt{x}', res: '√x' },
+    { cmd: '\\sum_{i=0}^n', res: 'Σ(i=0 to n)' }
+  ];
+
+  examples.forEach((ex) => {
+    items.push(
+      `<div class="symbol-item"><span>${ex.cmd}</span> <span>${ex.res}</span></div>`
+    );
+  });
+
+  // Add all mapped symbols
+  for (const [key, value] of Object.entries(LATEX_SYMBOL_MAP)) {
+    items.push(
+      `<div class="symbol-item"><span>${key}</span> <span>${value}</span></div>`
+    );
+  }
+
+  container.innerHTML = items.join('');
 };
 
 /**
@@ -217,28 +682,86 @@ export const setupApp = () => {
   const themeToggle = document.getElementById('theme-toggle');
   const themeToggleIcon = document.getElementById('theme-toggle-icon');
 
-  const elements = [markdownOutput, previewArea, copyBtn, themeToggle, themeToggleIcon];
+  // Help Modal Elements
+  const helpBtn = document.getElementById('help-btn');
+  const helpModal = document.getElementById('help-modal');
+  const closeModal = document.getElementById('close-modal');
+  const symbolList = document.getElementById('symbol-list');
+
+  const elements = [
+    markdownOutput,
+    previewArea,
+    copyBtn,
+    themeToggle,
+    themeToggleIcon,
+    helpBtn,
+    helpModal,
+    closeModal,
+    symbolList
+  ];
   if (elements.some((el) => !el)) return;
 
   const initialTheme = initTheme();
   updateThemeIcon(themeToggleIcon, initialTheme);
+  populateSymbolList(symbolList);
 
   const updatePreview = (markdown) => {
     previewArea.innerHTML = marked.parse(markdown);
   };
 
+  const toggleModal = (show) => {
+    if (show) {
+      helpModal.style.display = 'flex';
+      // Trigger reflow for transition
+      void helpModal.offsetWidth;
+      helpModal.classList.add('show');
+      helpModal.setAttribute('aria-hidden', 'false');
+    } else {
+      helpModal.classList.remove('show');
+      helpModal.setAttribute('aria-hidden', 'true');
+      setTimeout(() => {
+        if (!helpModal.classList.contains('show')) {
+          helpModal.style.display = 'none';
+        }
+      }, 300);
+    }
+  };
+
+  helpBtn.addEventListener('click', () => toggleModal(true));
+  closeModal.addEventListener('click', () => toggleModal(false));
+
+  // Close on outside click
+  window.addEventListener('click', (event) => {
+    if (event.target === helpModal) {
+      toggleModal(false);
+    }
+  });
+
+  // Close on Escape key
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && helpModal.classList.contains('show')) {
+      toggleModal(false);
+    }
+  });
+
   markdownOutput.addEventListener('paste', (e) => {
     e.preventDefault();
-    const html = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+    const html =
+      e.clipboardData.getData('text/html') ||
+      e.clipboardData.getData('text/plain');
     if (html) {
       const markdown = transformContent(html);
       markdownOutput.textContent = markdown;
+      highlightMarkdown(markdownOutput);
       updatePreview(markdown);
       showToast('Pasted and converted successfully!');
     }
   });
 
-  markdownOutput.addEventListener('input', () => updatePreview(markdownOutput.textContent));
+  markdownOutput.addEventListener('input', () => {
+    highlightMarkdown(markdownOutput);
+    updatePreview(markdownOutput.textContent);
+  });
 
   copyBtn.addEventListener('click', () => {
     if (markdownOutput.textContent) {
