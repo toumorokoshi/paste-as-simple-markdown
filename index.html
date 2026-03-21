@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paste as Simple Markdown</title>
+
+  <!-- SEO and Production Metadata -->
+  <meta name="description" content="A lightweight, modern web application that converts pasted rich text into clean Markdown and translates LaTeX equations into readable plaintext Unicode characters.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2c3e50">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yusuke.github.io/paste-as-simple-markdown/">
+  <meta property="og:title" content="Paste as Simple Markdown">
+  <meta property="og:description" content="Convert rich text to clean Markdown and LaTeX to Unicode instantly.">
+  <meta property="og:image" content="https://yusuke.github.io/paste-as-simple-markdown/favicon.svg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary">
+  <meta property="twitter:url" content="https://yusuke.github.io/paste-as-simple-markdown/">
+  <meta property="twitter:title" content="Paste as Simple Markdown">
+  <meta property="twitter:description" content="Convert rich text to clean Markdown and LaTeX to Unicode instantly.">
+  <meta property="twitter:image" content="https://yusuke.github.io/paste-as-simple-markdown/favicon.svg">
+
+  <!-- Standard Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Paste as Simple Markdown</h1>
+    <button id="copy-btn" aria-label="Copy Markdown to clipboard">Copy Markdown</button>
+  </header>
+
+  <main class="split-pane">
+    <section id="input-pane" class="pane" aria-labelledby="input-heading">
+      <h2 id="input-heading" class="sr-only">Input Area</h2>
+      <!-- Capture paste events here -->
+      <div id="paste-area" 
+           contenteditable="true" 
+           role="textbox" 
+           aria-multiline="true" 
+           aria-placeholder="Paste rich text here..." 
+           placeholder="Paste rich text here..."
+           aria-label="Paste your rich text content here"></div>
+      <pre id="markdown-output" 
+           aria-label="Raw Markdown Output" 
+           aria-live="polite"></pre>
+    </section>
+    
+    <section id="preview-pane" class="pane" aria-labelledby="preview-heading">
+      <h2 id="preview-heading" class="sr-only">Live Preview</h2>
+      <div id="preview-area" 
+           aria-label="Rendered Markdown Preview" 
+           aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Load dependencies (Turndown for HTML-to-MD, Marked for Preview) -->
+  <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <!-- Application Logic -->
+  <script src="main.js"></script>
+</body>
+</html>

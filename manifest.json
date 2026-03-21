@@ -1,0 +1,16 @@
+{
+  "name": "Paste as Simple Markdown",
+  "short_name": "PasteMD",
+  "description": "Convert rich text to clean Markdown and LaTeX to Unicode.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
