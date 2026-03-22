@@ -246,6 +246,8 @@ const SUBSCRIPT_MAP = {
 
 const TOAST_DURATION = 2000;
 const FADE_OUT_DURATION = 500;
+const MODAL_TRANSITION_MS = 300;
+const NOT_FOUND = -1;
 
 /**
  * Regex Patterns
@@ -287,85 +289,108 @@ const SUN_ICON = `
  * Returns -1 if no matching brace is found.
  */
 const findClosingBrace = (text, openIndex) => {
-  let count = 0;
-  for (let i = openIndex; i < text.length; i++) {
-    if (text[i] === '{') count++;
-    else if (text[i] === '}') {
-      count--;
-      if (count === 0) return i;
-    }
+  const charWeight = { '{': 1, '}': -1 };
+  const result = Array.from(text.substring(openIndex)).reduce(
+    (acc, char, i) => {
+      if (acc.foundIndex !== NOT_FOUND) return acc;
+      const newCount = acc.count + (charWeight[char] || 0);
+      return newCount === 0 && char === '}'
+        ? { count: 0, foundIndex: openIndex + i }
+        : { count: newCount, foundIndex: NOT_FOUND };
+    },
+    { count: 0, foundIndex: NOT_FOUND }
+  );
+  return result.foundIndex;
+};
+
+/**
+ * Replaces LaTeX commands with balanced braces recursively.
+ */
+/**
+ * Finds the indices for a command match and its balanced braces.
+ */
+const findMatchIndices = (text, commandRegex, searchIndex) => {
+  const match = text.substring(searchIndex).match(commandRegex);
+  if (!match) return null;
+
+  const startIndex = searchIndex + match.index;
+  const firstBraceIndex = text.indexOf('{', startIndex);
+  if (firstBraceIndex === NOT_FOUND) {
+    return findMatchIndices(text, commandRegex, startIndex + 1);
   }
-  return -1;
+
+  const firstClosingBraceIndex = findClosingBrace(text, firstBraceIndex);
+  if (firstClosingBraceIndex === NOT_FOUND) {
+    return findMatchIndices(text, commandRegex, startIndex + 1);
+  }
+
+  return { match, startIndex, firstBraceIndex, firstClosingBraceIndex };
+};
+
+/**
+ * Extracts second argument for frac-like commands.
+ */
+const extractFracArguments = (text, firstClosingBraceIndex) => {
+  const remaining = text.substring(firstClosingBraceIndex + 1);
+  const secondBraceMatch = remaining.match(/^\s*{/);
+  if (!secondBraceMatch) return null;
+
+  const secondBraceIndex =
+    firstClosingBraceIndex + 1 + remaining.indexOf('{');
+  const secondClosingBraceIndex = findClosingBrace(text, secondBraceIndex);
+
+  if (secondClosingBraceIndex === NOT_FOUND) return null;
+
+  return {
+    arg2: text.substring(secondBraceIndex + 1, secondClosingBraceIndex),
+    lastIndex: secondClosingBraceIndex
+  };
 };
 
 /**
  * Replaces LaTeX commands with balanced braces recursively.
  */
 const replaceRecursiveCommand = (text, commandRegex, processor) => {
-  let result = text;
-  let searchIndex = 0;
-  while (true) {
-    const remainingText = result.substring(searchIndex);
-    const match = remainingText.match(commandRegex);
-    if (!match) break;
+  const indices = findMatchIndices(text, commandRegex, 0);
+  if (!indices) return text;
 
-    const startIndex = searchIndex + match.index;
-    const firstBraceIndex = result.indexOf('{', startIndex);
-    if (firstBraceIndex === -1) {
-      searchIndex = startIndex + 1;
-      continue;
-    }
+  const { match, startIndex, firstBraceIndex, firstClosingBraceIndex } = indices;
+  const arg1 = text.substring(firstBraceIndex + 1, firstClosingBraceIndex);
 
-    const firstClosingBraceIndex = findClosingBrace(result, firstBraceIndex);
-    if (firstClosingBraceIndex === -1) {
-      searchIndex = startIndex + 1;
-      continue;
-    }
-
-    const arg1 = result.substring(firstBraceIndex + 1, firstClosingBraceIndex);
-    let lastIndex = firstClosingBraceIndex;
-    let replacement;
-
+  const processMatch = () => {
     if (commandRegex.source.includes('frac')) {
-      const remaining = result.substring(firstClosingBraceIndex + 1);
-      const secondBraceMatch = remaining.match(/^\s*{/);
-      if (secondBraceMatch) {
-        const secondBraceIndex =
-          firstClosingBraceIndex + 1 + remaining.indexOf('{');
-        const secondClosingBraceIndex = findClosingBrace(
-          result,
-          secondBraceIndex
-        );
-        if (secondClosingBraceIndex !== -1) {
-          const arg2 = result.substring(
-            secondBraceIndex + 1,
-            secondClosingBraceIndex
-          );
-          replacement = processor(match, arg1, arg2);
-          lastIndex = secondClosingBraceIndex;
-        }
+      const fracArgs = extractFracArguments(text, firstClosingBraceIndex);
+      if (fracArgs) {
+        return {
+          replacement: processor(match, arg1, fracArgs.arg2),
+          lastIndex: fracArgs.lastIndex
+        };
       }
-
-      if (replacement === undefined) {
-        searchIndex = startIndex + 1;
-        continue;
-      }
-    } else {
-      replacement = processor(match, arg1);
+      return null;
     }
+    return {
+      replacement: processor(match, arg1),
+      lastIndex: firstClosingBraceIndex
+    };
+  };
 
-    if (replacement !== undefined) {
-      result =
-        result.substring(0, startIndex) +
-        replacement +
-        result.substring(lastIndex + 1);
-      // Reset searchIndex to 0 to catch nested structures from the inside out or outside in
-      searchIndex = 0;
-    } else {
-      searchIndex = startIndex + 1;
-    }
+  const result = processMatch();
+  if (result && result.replacement !== undefined) {
+    const nextText =
+      text.substring(0, startIndex) +
+      result.replacement +
+      text.substring(result.lastIndex + 1);
+    return replaceRecursiveCommand(nextText, commandRegex, processor);
   }
-  return result;
+
+  return (
+    text.substring(0, startIndex + 1) +
+    replaceRecursiveCommand(
+      text.substring(startIndex + 1),
+      commandRegex,
+      processor
+    )
+  );
 };
 
 /**
@@ -672,6 +697,84 @@ const populateSymbolList = (container) => {
 };
 
 /**
+ * Sets up the Help modal interactivity.
+ */
+const setupHelpModal = (helpBtn, helpModal, closeModal) => {
+  const toggleModal = (show) => {
+    if (show) {
+      const modal = helpModal;
+      modal.style.display = 'flex';
+      void modal.offsetWidth; // Trigger reflow
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    } else {
+      helpModal.classList.remove('show');
+      helpModal.setAttribute('aria-hidden', 'true');
+      setTimeout(() => {
+        if (!helpModal.classList.contains('show')) {
+          helpModal.style.display = 'none';
+        }
+      }, MODAL_TRANSITION_MS);
+    }
+  };
+
+  helpBtn.addEventListener('click', () => toggleModal(true));
+  closeModal.addEventListener('click', () => toggleModal(false));
+
+  window.addEventListener('click', (event) => {
+    if (event.target === helpModal) toggleModal(false);
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && helpModal.classList.contains('show')) {
+      toggleModal(false);
+    }
+  });
+};
+
+/**
+ * Sets up the markdown editor interactivity.
+ */
+const setupMarkdownEditor = (markdownOutput, previewArea) => {
+  const updatePreview = (markdown) => {
+    previewArea.innerHTML = marked.parse(markdown);
+  };
+
+  markdownOutput.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const html =
+      e.clipboardData.getData('text/html') ||
+      e.clipboardData.getData('text/plain');
+    if (html) {
+      const markdown = transformContent(html);
+      const output = markdownOutput;
+      output.textContent = markdown;
+      highlightMarkdown(output);
+      updatePreview(markdown);
+      showToast('Pasted and converted successfully!');
+    }
+  });
+
+  markdownOutput.addEventListener('input', () => {
+    highlightMarkdown(markdownOutput);
+    updatePreview(markdownOutput.textContent);
+  });
+};
+
+/**
+ * Sets up the theme toggle interactivity.
+ */
+const setupThemeToggle = (themeToggle, themeToggleIcon) => {
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(themeToggleIcon, newTheme);
+  });
+};
+
+/**
  * Initializes the application by setting up event listeners and DOM references.
  * @export
  */
@@ -681,8 +784,6 @@ export const setupApp = () => {
   const copyBtn = document.getElementById('copy-btn');
   const themeToggle = document.getElementById('theme-toggle');
   const themeToggleIcon = document.getElementById('theme-toggle-icon');
-
-  // Help Modal Elements
   const helpBtn = document.getElementById('help-btn');
   const helpModal = document.getElementById('help-modal');
   const closeModal = document.getElementById('close-modal');
@@ -705,63 +806,9 @@ export const setupApp = () => {
   updateThemeIcon(themeToggleIcon, initialTheme);
   populateSymbolList(symbolList);
 
-  const updatePreview = (markdown) => {
-    previewArea.innerHTML = marked.parse(markdown);
-  };
-
-  const toggleModal = (show) => {
-    if (show) {
-      helpModal.style.display = 'flex';
-      // Trigger reflow for transition
-      void helpModal.offsetWidth;
-      helpModal.classList.add('show');
-      helpModal.setAttribute('aria-hidden', 'false');
-    } else {
-      helpModal.classList.remove('show');
-      helpModal.setAttribute('aria-hidden', 'true');
-      setTimeout(() => {
-        if (!helpModal.classList.contains('show')) {
-          helpModal.style.display = 'none';
-        }
-      }, 300);
-    }
-  };
-
-  helpBtn.addEventListener('click', () => toggleModal(true));
-  closeModal.addEventListener('click', () => toggleModal(false));
-
-  // Close on outside click
-  window.addEventListener('click', (event) => {
-    if (event.target === helpModal) {
-      toggleModal(false);
-    }
-  });
-
-  // Close on Escape key
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && helpModal.classList.contains('show')) {
-      toggleModal(false);
-    }
-  });
-
-  markdownOutput.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const html =
-      e.clipboardData.getData('text/html') ||
-      e.clipboardData.getData('text/plain');
-    if (html) {
-      const markdown = transformContent(html);
-      markdownOutput.textContent = markdown;
-      highlightMarkdown(markdownOutput);
-      updatePreview(markdown);
-      showToast('Pasted and converted successfully!');
-    }
-  });
-
-  markdownOutput.addEventListener('input', () => {
-    highlightMarkdown(markdownOutput);
-    updatePreview(markdownOutput.textContent);
-  });
+  setupHelpModal(helpBtn, helpModal, closeModal);
+  setupMarkdownEditor(markdownOutput, previewArea);
+  setupThemeToggle(themeToggle, themeToggleIcon);
 
   copyBtn.addEventListener('click', () => {
     if (markdownOutput.textContent) {
@@ -769,14 +816,6 @@ export const setupApp = () => {
         showToast('Markdown copied to clipboard!');
       });
     }
-  });
-
-  themeToggle.addEventListener('click', () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(themeToggleIcon, newTheme);
   });
 };
 
