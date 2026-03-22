@@ -22,7 +22,7 @@
   "bugs": {
     "url": "https://github.com/toumorokoshi/paste-as-simple-markdown/issues"
   },
-  "homepage": "https://github.com/toumorokoshi/paste-as-simple-markdown#readme",
+  "homepage": "https://toumorokoshi.github.io/paste-as-simple-markdown/",
   "dependencies": {
     "marked": "^17.0.5",
     "prismjs": "^1.30.0",

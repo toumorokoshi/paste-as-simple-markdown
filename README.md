@@ -2,6 +2,8 @@
 
 A lightweight, modern web application designed for GitHub Pages that converts pasted rich text into clean Markdown and translates LaTeX equations into readable plaintext Unicode characters.
 
+**[Live Demo](https://toumorokoshi.github.io/paste-as-simple-markdown/)**
+
 ## Overview
 
 Often, when copying text from academic papers, Wikipedia, or other rich-text sources, the clipboard contains a mix of complex HTML and LaTeX markup. This tool intercepts that clipboard data and processes it into standard Markdown, stripping out annoying visual formatting while preserving the logical structure and translating math symbols into plaintext.
