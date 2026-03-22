@@ -21,7 +21,8 @@ task.
 
 ## Committing code
 
-If the prompt contains `please commit`, then commit and push the code.
+- **unless** the prompt contains "don't commit", commit the code.
+- **unless** the prompt contains "don't push", push the code.
 
 - Use the conventional commit format for commit messages.
 - The commit description must explain the problem first.
@@ -32,3 +33,14 @@ If the prompt contains `please commit`, then commit and push the code.
 - Always run linting and formatting before committing.
 - Formatting and lint fixing tools are available via `just fix`.
 - Linting tools are available via `just lint`.
+
+## Testing
+
+- linting, formatting, and testing **must** pass before a commit.
+- add unit tests for every change if possible.
+
+## CI
+
+CI **must** pass after every commit.
+
+To verify CI status, use the GitHub MCP server.
