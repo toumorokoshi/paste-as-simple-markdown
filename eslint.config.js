@@ -25,10 +25,16 @@ export default [
       complexity: ['error', 5],
       'max-depth': ['error', 3],
       'max-lines-per-function': ['error', 70],
-      'no-magic-numbers': ['off'],
+      'no-magic-numbers': ['error', { ignore: [0, 1, 2] }],
       'functional/no-let': 'error',
       'no-var': 'error',
       'prefer-const': 'error'
+    }
+  },
+  {
+    files: ['eslint.config.js'],
+    rules: {
+      'no-magic-numbers': 'off'
     }
   },
   {

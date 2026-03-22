@@ -25,6 +25,7 @@
   "homepage": "https://github.com/toumorokoshi/paste-as-simple-markdown#readme",
   "dependencies": {
     "marked": "^17.0.5",
+    "prismjs": "^1.30.0",
     "turndown": "^7.2.2"
   },
   "devDependencies": {

@@ -52,14 +52,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build
+        run: npm run build
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the entire repository root
-          path: '.'
+          # Upload the dist folder
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment

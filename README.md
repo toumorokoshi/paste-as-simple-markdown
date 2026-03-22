@@ -38,6 +38,7 @@ To run the application locally for development:
 4. Open the URL provided (usually `http://localhost:5173`) in your browser.
 
 Alternatively, you can build the project and serve the `dist` directory:
+
 ```bash
 npm run build
 npm run preview

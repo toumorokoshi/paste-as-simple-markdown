@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>Paste as Simple Markdown</title>
 
     <!-- SEO and Production Metadata -->
@@ -78,6 +81,12 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
         </button>
+        <button
+          id="help-btn"
+          aria-label="Show help and supported LaTeX symbols"
+        >
+          Help
+        </button>
         <button id="copy-btn" aria-label="Copy Markdown to clipboard">
           Copy Markdown
         </button>
@@ -109,6 +118,52 @@
         ></div>
       </section>
     </main>
+
+    <!-- Help Modal -->
+    <div
+      id="help-modal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="modal-title"
+    >
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2 id="modal-title">About & Help</h2>
+          <button id="close-modal" aria-label="Close modal">&times;</button>
+        </header>
+        <div class="modal-body">
+          <section>
+            <h3>How to use</h3>
+            <ol>
+              <li>
+                <strong>Copy</strong> rich text (from Word, Google Docs, etc.)
+                or LaTeX equations.
+              </li>
+              <li>
+                <strong>Paste</strong> directly into the left "Input" pane.
+              </li>
+              <li>
+                The app <strong>automatically converts</strong> the content to
+                clean Markdown and translates LaTeX to Unicode.
+              </li>
+              <li>Click <strong>"Copy Markdown"</strong> to get the result.</li>
+            </ol>
+          </section>
+          <hr />
+          <section>
+            <h3>Supported LaTeX Symbols</h3>
+            <p>
+              The following LaTeX-style commands are converted to Unicode
+              characters:
+            </p>
+            <div id="symbol-list" class="symbol-grid">
+              <!-- Populated by main.js -->
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
 
     <!-- Application Logic (Vite handles ESM imports for Turndown and Marked) -->
     <script type="module" src="/main.js"></script>
