@@ -165,7 +165,8 @@ header h1 {
   border-right: none;
 }
 
-#markdown-output {
+#markdown-output,
+#raw-input {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
@@ -181,12 +182,14 @@ header h1 {
     color 0.3s;
 }
 
-#markdown-output:empty::before {
+#markdown-output:empty::before,
+#raw-input:empty::before {
   content: attr(placeholder);
   color: #999;
 }
 
-#markdown-output:focus {
+#markdown-output:focus,
+#raw-input:focus {
   box-shadow: inset 0 0 0 2px var(--accent-color);
   outline: none;
 }

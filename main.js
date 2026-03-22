@@ -875,7 +875,7 @@ const setupHelpModal = (helpBtn, helpModal, closeModal) => {
 /**
  * Sets up the markdown editor interactivity.
  */
-const setupMarkdownEditor = (markdownOutput, previewArea) => {
+const setupMarkdownEditor = (markdownOutput, previewArea, rawInput) => {
   const updatePreview = (markdown) => {
     previewArea.innerHTML = marked.parse(markdown);
   };
@@ -886,6 +886,7 @@ const setupMarkdownEditor = (markdownOutput, previewArea) => {
     const plainData = e.clipboardData.getData('text/plain');
     
     if (htmlData) {
+      rawInput.textContent = htmlData;
       const markdown = transformContent(htmlData);
       const output = markdownOutput;
       output.textContent = markdown;
@@ -893,6 +894,7 @@ const setupMarkdownEditor = (markdownOutput, previewArea) => {
       updatePreview(markdown);
       showToast('Pasted and converted successfully!');
     } else if (plainData) {
+      rawInput.textContent = plainData;
       const markdown = convertLatexToUnicode(plainData);
       const output = markdownOutput;
       output.textContent = markdown;
@@ -928,6 +930,7 @@ const setupThemeToggle = (themeToggle, themeToggleIcon) => {
 export const setupApp = () => {
   const markdownOutput = document.getElementById('markdown-output');
   const previewArea = document.getElementById('preview-area');
+  const rawInput = document.getElementById('raw-input');
   const copyBtn = document.getElementById('copy-btn');
   const themeToggle = document.getElementById('theme-toggle');
   const themeToggleIcon = document.getElementById('theme-toggle-icon');
@@ -939,6 +942,7 @@ export const setupApp = () => {
   const elements = [
     markdownOutput,
     previewArea,
+    rawInput,
     copyBtn,
     themeToggle,
     themeToggleIcon,
@@ -954,7 +958,7 @@ export const setupApp = () => {
   populateSymbolList(symbolList);
 
   setupHelpModal(helpBtn, helpModal, closeModal);
-  setupMarkdownEditor(markdownOutput, previewArea);
+  setupMarkdownEditor(markdownOutput, previewArea, rawInput);
   setupThemeToggle(themeToggle, themeToggleIcon);
 
   copyBtn.addEventListener('click', () => {

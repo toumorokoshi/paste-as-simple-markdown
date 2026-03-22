@@ -228,6 +228,7 @@ const setupDOM = () => {
       </div>
     </header>
     <main class="split-pane">
+      <div id="raw-input"></div>
       <div id="markdown-output" contenteditable="true"></div>
       <div id="preview-area"></div>
     </main>
@@ -256,6 +257,18 @@ describe('IO Layer Integration - Paste', () => {
     expect(markdownOutput.textContent).toContain('**Bold**');
     expect(previewArea.innerHTML).toContain('<strong>Bold</strong>');
     expect(markdownOutput.innerHTML).toContain('class="token bold"');
+  });
+
+  it('updates raw-input on paste', () => {
+    const markdownOutput = document.getElementById('markdown-output');
+    const rawInput = document.getElementById('raw-input');
+    const pasteEvent = new Event('paste', { bubbles: true });
+    const htmlData = '<b>Bold</b>';
+    Object.defineProperty(pasteEvent, 'clipboardData', {
+      value: { getData: (type) => (type === 'text/html' ? htmlData : '') }
+    });
+    markdownOutput.dispatchEvent(pasteEvent);
+    expect(rawInput.textContent).toBe(htmlData);
   });
 
   it('converts LaTeX and highlights concurrently on paste', () => {

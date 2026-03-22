@@ -94,6 +94,16 @@
     </header>
 
     <main class="split-pane">
+      <section id="raw-input-pane" class="pane" aria-labelledby="raw-input-heading">
+        <h2 id="raw-input-heading" class="sr-only">Raw Input</h2>
+        <div
+          id="raw-input"
+          aria-label="Original raw input"
+          aria-live="polite"
+          placeholder="Raw input will appear here..."
+        ></div>
+      </section>
+
       <section id="input-pane" class="pane" aria-labelledby="input-heading">
         <h2 id="input-heading" class="sr-only">Input Area</h2>
         <!-- Capture paste events and display Markdown here -->
