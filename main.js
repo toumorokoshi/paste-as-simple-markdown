@@ -163,7 +163,19 @@ const LATEX_SYMBOL_MAP = {
   '\\clubsuit': '♣',
   '\\diamondsuit': '♢',
   '\\heartsuit': '♡',
-  '\\spadesuit': '♠'
+  '\\spadesuit': '♠',
+
+  // Dots
+  '\\dots': '...',
+  '\\dotsb': '...',
+  '\\dotsc': '...',
+  '\\dotsi': '...',
+  '\\dotsm': '...',
+  '\\dotso': '...',
+  '\\cdots': '...',
+  '\\ldots': '...',
+  '\\vdots': '⋮',
+  '\\ddots': '⋱'
 };
 
 const SUPERSCRIPT_MAP = {
@@ -488,12 +500,41 @@ const handleSimpleSubscripts = (text) =>
   );
 
 /**
+ * Handles Wikipedia-style displaystyle commands.
+ * @param {string} text
+ * @returns {string}
+ */
+const handleDisplayStyle = (text) => {
+  const DISPLAYSTYLE_START = '{\\displaystyle';
+  let currentIndex = text.indexOf(DISPLAYSTYLE_START);
+  while (currentIndex !== NOT_FOUND) {
+    const startBraceIndex = currentIndex;
+    const endBraceIndex = findClosingBrace(text, startBraceIndex);
+    if (endBraceIndex !== NOT_FOUND) {
+      const content = text.substring(
+        startBraceIndex + DISPLAYSTYLE_START.length,
+        endBraceIndex
+      );
+      text =
+        text.substring(0, startBraceIndex) +
+        content.trim() +
+        text.substring(endBraceIndex + 1);
+    } else {
+      break;
+    }
+    currentIndex = text.indexOf(DISPLAYSTYLE_START);
+  }
+  return text;
+};
+
+/**
  * Replaces LaTeX commands with Unicode equivalents.
  * @param {string} text
  * @returns {string}
  */
 export const convertLatexToUnicode = (text) => {
-  const step0 = handleLimits(text);
+  const step0a = handleDisplayStyle(text);
+  const step0 = handleLimits(step0a);
   const step1 = handleSymbols(step0);
   const step2 = handleSimpleSuperscripts(step1);
 
@@ -523,7 +564,13 @@ export const convertLatexToUnicode = (text) => {
     (match, arg1, arg2) => `(${arg1})/(${arg2})`
   );
 
-  return replaceRecursiveCommand(step4, LATEX_SQRT_REGEX, (match, arg) =>
+  const step5 = replaceRecursiveCommand(
+    step4,
+    /\\+text/,
+    (match, arg) => arg
+  );
+
+  return replaceRecursiveCommand(step5, LATEX_SQRT_REGEX, (match, arg) =>
     arg.length === 1 ? `√${arg}` : `√(${arg})`
   );
 };
@@ -538,6 +585,28 @@ export const htmlToMarkdown = (html) => {
     headingStyle: 'atx',
     codeBlockStyle: 'fenced'
   });
+
+  // Handle Wikipedia math elements specifically to avoid messy MathML text
+  turndownService.addRule('wikipedia-math', {
+    filter: (node) =>
+      node.nodeName === 'SPAN' && node.classList.contains('mwe-math-element'),
+    replacement: (content, node) => {
+      const img = node.querySelector(
+        'img.mwe-math-fallback-image-inline, img.mwe-math-fallback-image-display'
+      );
+      if (img && img.getAttribute('alt')) {
+        return img.getAttribute('alt');
+      }
+      return content;
+    }
+  });
+
+  // Strip math tags as they often result in messy text
+  turndownService.addRule('strip-math', {
+    filter: ['math'],
+    replacement: () => ''
+  });
+
   return turndownService.turndown(html);
 };
 

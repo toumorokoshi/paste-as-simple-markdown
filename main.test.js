@@ -98,6 +98,19 @@ describe('convertLatexToUnicode - Expanded Symbols', () => {
     expect(convertLatexToUnicode('x_{(1)}')).toBe('x₍₁₎');
     expect(convertLatexToUnicode('x_{=}')).toBe('x₌');
   });
+
+  it('converts Wikipedia style math with {\\displaystyle ...}', () => {
+    const input =
+      '{\\displaystyle X=[0,1]\\cup[2,3]\\cup[4,5]\\cup\\dots\\cup[2k,2k+1]\\cup\\dotsb}';
+    const result = convertLatexToUnicode(input);
+    expect(result).toBe('X=[0,1]∪[2,3]∪[4,5]∪...∪[2k,2k+1]∪...');
+  });
+
+  it('converts \\text{...} by removing the command and keeping the content', () => {
+    const input = '\\alpha + \\text{some text} + \\beta';
+    const result = convertLatexToUnicode(input);
+    expect(result).toBe('α + some text + β');
+  });
 });
 
 describe('transformContent', () => {
@@ -114,6 +127,25 @@ describe('transformContent', () => {
     // Turndown will convert \alpha to \\alpha
     // convertLatexToUnicode should handle it and return α
     expect(result).toBe('$\u03B1 + \u03B2$'); // α + β
+  });
+
+  it('extracts alt from Wikipedia math and converts it', () => {
+    const html = `
+      <p>Consider the disjoint countable union 
+      <span class="mwe-math-element">
+        <span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;">
+          <math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\\displaystyle X=[0,1]\\cup[2,3]\\cup[4,5]\\cup\\dots\\cup[2k,2k+1]\\cup\\dotsb}">
+            <mi>X</mi>...
+          </math>
+        </span>
+        <img src="..." class="mwe-math-fallback-image-inline" aria-hidden="true" alt="{\\displaystyle X=[0,1]\\cup[2,3]\\cup[4,5]\\cup\\dots\\cup[2k,2k+1]\\cup\\dotsb}">
+      </span>
+      </p>
+    `;
+    const result = transformContent(html);
+    expect(result).toContain(
+      'Consider the disjoint countable union X=[0,1]∪[2,3]∪[4,5]∪...∪[2k,2k+1]∪...'
+    );
   });
 });
 
