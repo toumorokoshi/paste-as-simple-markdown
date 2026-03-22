@@ -278,7 +278,7 @@ const NOT_FOUND = -1;
  */
 const LATEX_LIMITS_REGEX =
   /\\+(sum|int|prod)(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?|\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?)?/g;
-const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+|[{}_^()\[\]$!%&])/g;
+const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+|[{}_^()[]$!%&])/g;
 const LATEX_SIMPLE_SUPERSCRIPT_REGEX =
   /(\w|\))?\^({([a-zA-Z0-9+\-=()]+)}|([a-zA-Z0-9+\-=()]))/g;
 const LATEX_COMPLEX_SUPERSCRIPT_REGEX = /(\w|\))?\^{/;
@@ -308,6 +308,75 @@ const SUN_ICON = `
 /**
  * Pure Logic Functions
  */
+
+/**
+ * Cleans content for comparison by removing LaTeX commands and non-alphanumeric characters.
+ */
+const cleanForComparison = (s) =>
+  s.replace(/\\[a-zA-Z]+/g, '').replace(/[^a-zA-Z0-9]/g, '');
+
+/**
+ * Checks if the stripped prefix matches the content.
+ */
+const matchesContent = (strippedPrefix, strippedContent) =>
+  strippedPrefix.length > 0 &&
+  (strippedContent.includes(strippedPrefix) ||
+    strippedPrefix.includes(strippedContent));
+
+/**
+ * Checks if the current index is at a word boundary.
+ */
+const isAtBoundary = (trimmedPrefix, i) =>
+  i === 0 || /\s/.test(trimmedPrefix[i - 1]);
+
+/**
+ * Checks if the current stripped prefix matches the content and is at a word boundary.
+ */
+const isDuplicateMatch = (strippedPrefix, strippedContent, trimmedPrefix, i) =>
+  matchesContent(strippedPrefix, strippedContent) &&
+  isAtBoundary(trimmedPrefix, i);
+
+/**
+ * Finds the index in trimmedPrefix where a duplicate of strippedContent begins.
+ */
+const findDuplicatePrefixIndex = (trimmedPrefix, strippedContent) => {
+  const result = Array.from(trimmedPrefix).reduceRight(
+    (acc, char, i) => {
+      if (
+        acc.foundIndex !== NOT_FOUND ||
+        acc.strippedPrefix.length >= strippedContent.length * 2
+      ) {
+        return acc;
+      }
+
+      const newStrippedPrefix = /[a-zA-Z0-9]/.test(char)
+        ? char + acc.strippedPrefix
+        : acc.strippedPrefix;
+
+      if (
+        isDuplicateMatch(newStrippedPrefix, strippedContent, trimmedPrefix, i)
+      ) {
+        return { foundIndex: i, strippedPrefix: newStrippedPrefix };
+      }
+      return { ...acc, strippedPrefix: newStrippedPrefix };
+    },
+    { foundIndex: NOT_FOUND, strippedPrefix: '' }
+  );
+  return result.foundIndex;
+};
+
+/**
+ * Deduplicates prefix if it contains a plain-text version of the content.
+ */
+const deduplicatePrefix = (prefix, content) => {
+  const strippedContent = cleanForComparison(content);
+  if (!strippedContent) return prefix;
+
+  const trimmedPrefix = prefix.trimEnd();
+  const index = findDuplicatePrefixIndex(trimmedPrefix, strippedContent);
+  return index !== NOT_FOUND ? trimmedPrefix.substring(0, index) : prefix;
+};
+
 /**
  * Finds the index of the matching closing brace starting from an opening brace.
  * Returns -1 if no matching brace is found.
@@ -518,59 +587,21 @@ const handleSimpleSubscripts = (text) =>
  */
 const handleDisplayStyle = (text) => {
   const DISPLAYSTYLE_START = '{\\displaystyle';
-  const currentIndex = text.indexOf(DISPLAYSTYLE_START);
-  if (currentIndex === NOT_FOUND) {
-    return text;
-  }
+  const startBraceIndex = text.indexOf(DISPLAYSTYLE_START);
+  if (startBraceIndex === NOT_FOUND) return text;
 
-  const startBraceIndex = currentIndex;
   const endBraceIndex = findClosingBrace(text, startBraceIndex);
-  if (endBraceIndex === NOT_FOUND) {
-    return text;
-  }
+  if (endBraceIndex === NOT_FOUND) return text;
 
   const content = text
     .substring(startBraceIndex + DISPLAYSTYLE_START.length, endBraceIndex)
     .trim();
 
-  // Deduplication heuristic for Wikipedia-style pastes:
-  // If the text immediately preceding the block is a plain-text version of the LaTeX, remove it.
-  let prefix = text.substring(0, startBraceIndex);
-  const cleanForComparison = (s) =>
-    s.replace(/\\[a-zA-Z]+/g, '').replace(/[^a-zA-Z0-9]/g, '');
-  const strippedContent = cleanForComparison(content);
-
-  if (strippedContent.length > 0) {
-    const trimmedPrefix = prefix.trimEnd();
-    let strippedPrefix = '';
-    let i = trimmedPrefix.length - 1;
-    // Look back for characters that match the stripped content
-    while (i >= 0 && strippedPrefix.length < strippedContent.length * 2) {
-      const char = trimmedPrefix[i];
-      if (/[a-zA-Z0-9]/.test(char)) {
-        strippedPrefix = char + strippedPrefix;
-      }
-      // If we've matched a significant portion, consider it a duplicate.
-      if (
-        strippedPrefix.length > 0 &&
-        (strippedContent.includes(strippedPrefix) ||
-          strippedPrefix.includes(strippedContent))
-      ) {
-        // Potential match found. If the next character back is a newline or space,
-        // and we've matched a significant portion, consider it a duplicate.
-        if (i === 0 || /\s/.test(trimmedPrefix[i - 1])) {
-          if (strippedPrefix.length >= Math.min(strippedContent.length, 1)) {
-            prefix = trimmedPrefix.substring(0, i);
-            break;
-          }
-        }
-      }
-      i--;
-    }
-  }
+  const prefix = text.substring(0, startBraceIndex);
+  const deduplicatedPrefix = deduplicatePrefix(prefix, content);
 
   const updatedText =
-    (prefix.trimEnd() ? prefix.trimEnd() + ' ' : '') +
+    (deduplicatedPrefix.trimEnd() ? deduplicatedPrefix.trimEnd() + ' ' : '') +
     content +
     text.substring(endBraceIndex + 1);
 
@@ -584,10 +615,12 @@ const handleDisplayStyle = (text) => {
  */
 const sanitizeInput = (text) => {
   return text
+    /* eslint-disable no-control-regex */
     .replace(/\x1b\[20[0-9]~?/g, '')
     .replace(/\x1b\[[0-9;]*[mK]/g, '') // Also strip ANSI color codes if any
+    /* eslint-enable no-control-regex */
     .replace(/~$/, '')
-    .replace(/([^\n]{1,30})\n(?![ \t]*[*\-+\d\.])/g, '$1 ')
+    .replace(/([^\n]{1,30})\n(?![ \t]*[*\-+\d.])/g, '$1 ')
     .replace(/  +/g, ' ');
 };
 

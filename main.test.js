@@ -84,7 +84,9 @@ describe('convertLatexToUnicode - Expanded Symbols', () => {
     expect(convertLatexToUnicode('\\nabla')).toBe('∇');
     expect(convertLatexToUnicode('\\neg')).toBe('¬');
   });
+});
 
+describe('convertLatexToUnicode - Scripts and Blocks', () => {
   it('converts expanded superscripts', () => {
     expect(convertLatexToUnicode('x^a')).toBe('xᵃ');
     expect(convertLatexToUnicode('x^b')).toBe('xᵇ');
