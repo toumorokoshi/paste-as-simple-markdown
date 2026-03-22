@@ -186,6 +186,7 @@ header h1 {
 #raw-input:empty::before {
   content: attr(placeholder);
   color: #999;
+  pointer-events: none;
 }
 
 #markdown-output:focus,

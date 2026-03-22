@@ -614,14 +614,16 @@ const handleDisplayStyle = (text) => {
  * @returns {string}
  */
 const sanitizeInput = (text) => {
-  return text
-    /* eslint-disable no-control-regex */
-    .replace(/\x1b\[20[0-9]~?/g, '')
-    .replace(/\x1b\[[0-9;]*[mK]/g, '') // Also strip ANSI color codes if any
-    /* eslint-enable no-control-regex */
-    .replace(/~$/, '')
-    .replace(/([^\n]{1,30})\n(?![ \t]*[*\-+\d.])/g, '$1 ')
-    .replace(/  +/g, ' ');
+  return (
+    text
+      /* eslint-disable no-control-regex */
+      .replace(/\x1b\[20[0-9]~?/g, '')
+      .replace(/\x1b\[[0-9;]*[mK]/g, '') // Also strip ANSI color codes if any
+      /* eslint-enable no-control-regex */
+      .replace(/~$/, '')
+      .replace(/([^\n]{1,30})\n(?![ \t]*[*\-+\d.])/g, '$1 ')
+      .replace(/  +/g, ' ')
+  );
 };
 
 /**
@@ -669,8 +671,10 @@ export const convertLatexToUnicode = (text) => {
     (match, arg) => arg
   );
 
-  const step6 = replaceRecursiveCommand(step5, LATEX_SQRT_REGEX, (match, arg) =>
-    arg.length === 1 ? `√${arg}` : `√(${arg})`
+  const step6 = replaceRecursiveCommand(
+    step5,
+    LATEX_SQRT_REGEX,
+    (match, arg) => (arg.length === 1 ? `√${arg}` : `√(${arg})`)
   );
 
   const step7 = handleSymbols(step6);
@@ -906,40 +910,93 @@ const setupHelpModal = (helpBtn, helpModal, closeModal) => {
 };
 
 /**
+ * Highlight delay constant.
+ */
+export const HIGHLIGHT_DELAY_MS = 500;
+
+/**
+ * Updates the preview area with the given markdown.
+ */
+const updatePreview = (previewArea, markdown) => {
+  previewArea.innerHTML = marked.parse(markdown);
+};
+
+/**
+ * Converts clipboard content to markdown.
+ */
+const clipboardToMarkdown = (clipboardData) => {
+  const htmlData = clipboardData.getData('text/html');
+  const plainData = clipboardData.getData('text/plain');
+
+  if (htmlData) {
+    return {
+      markdown: transformContent(htmlData),
+      raw: htmlData
+    };
+  }
+
+  if (plainData) {
+    return {
+      markdown: convertLatexToUnicode(plainData),
+      raw: plainData
+    };
+  }
+
+  return null;
+};
+
+/**
+ * Handles paste events by converting HTML or plain text to markdown.
+ */
+const handlePaste = (e, markdownOutput, previewArea, rawInput) => {
+  const clipboardData = e.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+
+  const result = clipboardToMarkdown(clipboardData);
+  if (!result) return;
+
+  e.preventDefault();
+  try {
+    const { markdown, raw } = result;
+    rawInput.textContent = raw;
+    
+    const output = markdownOutput;
+    output.textContent = markdown;
+
+    // When we replace everything, we usually want the cursor at the end
+    // highlightMarkdown will attempt to restore previous position (usually 0 if empty)
+    // so we manually set it to the end after highlighting.
+    highlightMarkdown(output);
+    restoreCursorPosition(output, output.textContent.length);
+
+    updatePreview(previewArea, markdown);
+    showToast('Pasted and converted successfully!');
+  } catch (err) {
+    console.error('Conversion error:', err);
+    showToast('Error converting pasted content.');
+  }
+};
+
+/**
  * Sets up the markdown editor interactivity.
  */
 const setupMarkdownEditor = (markdownOutput, previewArea, rawInput) => {
-  const updatePreview = (markdown) => {
-    previewArea.innerHTML = marked.parse(markdown);
-  };
+  const state = { highlightTimeout: undefined };
 
   markdownOutput.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const htmlData = e.clipboardData.getData('text/html');
-    const plainData = e.clipboardData.getData('text/plain');
-    
-    if (htmlData) {
-      rawInput.textContent = htmlData;
-      const markdown = transformContent(htmlData);
-      const output = markdownOutput;
-      output.textContent = markdown;
-      highlightMarkdown(output);
-      updatePreview(markdown);
-      showToast('Pasted and converted successfully!');
-    } else if (plainData) {
-      rawInput.textContent = plainData;
-      const markdown = convertLatexToUnicode(plainData);
-      const output = markdownOutput;
-      output.textContent = markdown;
-      highlightMarkdown(output);
-      updatePreview(markdown);
-      showToast('Pasted and converted successfully!');
-    }
+    handlePaste(e, markdownOutput, previewArea, rawInput);
   });
 
   markdownOutput.addEventListener('input', () => {
-    highlightMarkdown(markdownOutput);
-    updatePreview(markdownOutput.textContent);
+    const text = markdownOutput.textContent;
+    updatePreview(previewArea, text);
+
+    // Debounce highlighting to avoid breaking soft keyboards (especially on Android)
+    // where frequent DOM churn during composition causes issues.
+    clearTimeout(state.highlightTimeout);
+    state.highlightTimeout = setTimeout(() => {
+      highlightMarkdown(markdownOutput);
+    }, HIGHLIGHT_DELAY_MS);
   });
 };
 
@@ -995,10 +1052,36 @@ export const setupApp = () => {
   setupThemeToggle(themeToggle, themeToggleIcon);
 
   copyBtn.addEventListener('click', () => {
-    if (markdownOutput.textContent) {
-      navigator.clipboard.writeText(markdownOutput.textContent).then(() => {
-        showToast('Markdown copied to clipboard!');
-      });
+    const text = markdownOutput.textContent;
+    if (!text) return;
+
+    const performCopy = (success) => {
+      if (success) showToast('Markdown copied to clipboard!');
+      else showToast('Failed to copy. Please copy manually.');
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => performCopy(true))
+        .catch(() => performCopy(false));
+    } else {
+      // Fallback for older browsers or non-secure contexts
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        performCopy(successful);
+      } catch {
+        performCopy(false);
+      }
+      document.body.removeChild(textArea);
     }
   });
 };
