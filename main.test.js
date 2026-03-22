@@ -111,6 +111,24 @@ describe('convertLatexToUnicode - Expanded Symbols', () => {
     const result = convertLatexToUnicode(input);
     expect(result).toBe('α + some text + β');
   });
+
+  it('handles bracketed paste markers and ANSI escape codes', () => {
+    const input = '\x1b[200~In topology, a space.\x1b[201~';
+    const result = convertLatexToUnicode(input);
+    expect(result).toBe('In topology, a space.');
+  });
+
+  it('deduplicates symbols before {\\displaystyle ...} blocks', () => {
+    const input = 'T\n{\\displaystyle T} is a space.';
+    const result = convertLatexToUnicode(input);
+    expect(result).toBe('T is a space.');
+  });
+
+  it('collapses short lines often found in Wikipedia pastes', () => {
+    const input = 'U\n=\nU\ni\nis a set.';
+    const result = convertLatexToUnicode(input);
+    expect(result).toBe('U = U i is a set.');
+  });
 });
 
 describe('transformContent', () => {

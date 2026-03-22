@@ -175,7 +175,19 @@ const LATEX_SYMBOL_MAP = {
   '\\cdots': '...',
   '\\ldots': '...',
   '\\vdots': '⋮',
-  '\\ddots': '⋱'
+  '\\ddots': '⋱',
+  '\\{': '{',
+  '\\}': '}',
+  '\\(': '(',
+  '\\)': ')',
+  '\\[': '[',
+  '\\]': ']',
+  '\\_': '_',
+  '\\^': '^',
+  '\\$': '$',
+  '\\%': '%',
+  '\\&': '&',
+  '\\\\': '\\'
 };
 
 const SUPERSCRIPT_MAP = {
@@ -266,7 +278,7 @@ const NOT_FOUND = -1;
  */
 const LATEX_LIMITS_REGEX =
   /\\+(sum|int|prod)(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?|\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?)?/g;
-const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+)/g;
+const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+|[{}_^()\[\]$!%&])/g;
 const LATEX_SIMPLE_SUPERSCRIPT_REGEX =
   /(\w|\))?\^({([a-zA-Z0-9+\-=()]+)}|([a-zA-Z0-9+\-=()]))/g;
 const LATEX_COMPLEX_SUPERSCRIPT_REGEX = /(\w|\))?\^{/;
@@ -517,16 +529,66 @@ const handleDisplayStyle = (text) => {
     return text;
   }
 
-  const content = text.substring(
-    startBraceIndex + DISPLAYSTYLE_START.length,
-    endBraceIndex
-  );
+  const content = text
+    .substring(startBraceIndex + DISPLAYSTYLE_START.length, endBraceIndex)
+    .trim();
+
+  // Deduplication heuristic for Wikipedia-style pastes:
+  // If the text immediately preceding the block is a plain-text version of the LaTeX, remove it.
+  let prefix = text.substring(0, startBraceIndex);
+  const cleanForComparison = (s) =>
+    s.replace(/\\[a-zA-Z]+/g, '').replace(/[^a-zA-Z0-9]/g, '');
+  const strippedContent = cleanForComparison(content);
+
+  if (strippedContent.length > 0) {
+    const trimmedPrefix = prefix.trimEnd();
+    let strippedPrefix = '';
+    let i = trimmedPrefix.length - 1;
+    // Look back for characters that match the stripped content
+    while (i >= 0 && strippedPrefix.length < strippedContent.length * 2) {
+      const char = trimmedPrefix[i];
+      if (/[a-zA-Z0-9]/.test(char)) {
+        strippedPrefix = char + strippedPrefix;
+      }
+      // If we've matched a significant portion, consider it a duplicate.
+      if (
+        strippedPrefix.length > 0 &&
+        (strippedContent.includes(strippedPrefix) ||
+          strippedPrefix.includes(strippedContent))
+      ) {
+        // Potential match found. If the next character back is a newline or space,
+        // and we've matched a significant portion, consider it a duplicate.
+        if (i === 0 || /\s/.test(trimmedPrefix[i - 1])) {
+          if (strippedPrefix.length >= Math.min(strippedContent.length, 1)) {
+            prefix = trimmedPrefix.substring(0, i);
+            break;
+          }
+        }
+      }
+      i--;
+    }
+  }
+
   const updatedText =
-    text.substring(0, startBraceIndex) +
-    content.trim() +
+    (prefix.trimEnd() ? prefix.trimEnd() + ' ' : '') +
+    content +
     text.substring(endBraceIndex + 1);
 
   return handleDisplayStyle(updatedText);
+};
+
+/**
+ * Sanitizes input by removing control characters like bracketed paste markers.
+ * @param {string} text
+ * @returns {string}
+ */
+const sanitizeInput = (text) => {
+  return text
+    .replace(/\x1b\[20[0-9]~?/g, '')
+    .replace(/\x1b\[[0-9;]*[mK]/g, '') // Also strip ANSI color codes if any
+    .replace(/~$/, '')
+    .replace(/([^\n]{1,30})\n(?![ \t]*[*\-+\d\.])/g, '$1 ')
+    .replace(/  +/g, ' ');
 };
 
 /**
@@ -535,13 +597,13 @@ const handleDisplayStyle = (text) => {
  * @returns {string}
  */
 export const convertLatexToUnicode = (text) => {
-  const step0a = handleDisplayStyle(text);
+  const sanitized = sanitizeInput(text);
+  const step0a = handleDisplayStyle(sanitized);
   const step0 = handleLimits(step0a);
-  const step1 = handleSymbols(step0);
-  const step2 = handleSimpleSuperscripts(step1);
+  const step1 = handleSimpleSuperscripts(step0);
 
-  const step2b = replaceRecursiveCommand(
-    step2,
+  const step1b = replaceRecursiveCommand(
+    step1,
     LATEX_COMPLEX_SUPERSCRIPT_REGEX,
     (match, arg) => {
       const base = match[1] || '';
@@ -549,10 +611,10 @@ export const convertLatexToUnicode = (text) => {
     }
   );
 
-  const step3 = handleSimpleSubscripts(step2b);
+  const step2 = handleSimpleSubscripts(step1b);
 
-  const step3b = replaceRecursiveCommand(
-    step3,
+  const step2b = replaceRecursiveCommand(
+    step2,
     LATEX_COMPLEX_SUBSCRIPT_REGEX,
     (match, arg) => {
       const base = match[1] || '';
@@ -560,17 +622,28 @@ export const convertLatexToUnicode = (text) => {
     }
   );
 
-  const step4 = replaceRecursiveCommand(
-    step3b,
+  const step3 = replaceRecursiveCommand(
+    step2b,
     LATEX_FRAC_REGEX,
     (match, arg1, arg2) => `(${arg1})/(${arg2})`
   );
 
-  const step5 = replaceRecursiveCommand(step4, /\\+text/, (match, arg) => arg);
+  const step4 = replaceRecursiveCommand(step3, /\\+text/, (match, arg) => arg);
 
-  return replaceRecursiveCommand(step5, LATEX_SQRT_REGEX, (match, arg) =>
+  const step5 = replaceRecursiveCommand(
+    step4,
+    /\\+(mathcal|mathbf|mathrm|mathbb|mathsf|mathtt)/,
+    (match, arg) => arg
+  );
+
+  const step6 = replaceRecursiveCommand(step5, LATEX_SQRT_REGEX, (match, arg) =>
     arg.length === 1 ? `√${arg}` : `√(${arg})`
   );
+
+  const step7 = handleSymbols(step6);
+
+  // Strip remaining LaTeX-style braces that are just grouping
+  return step7.replace(/{([^{}\n]+)}/g, '$1');
 };
 
 /**
@@ -809,11 +882,18 @@ const setupMarkdownEditor = (markdownOutput, previewArea) => {
 
   markdownOutput.addEventListener('paste', (e) => {
     e.preventDefault();
-    const html =
-      e.clipboardData.getData('text/html') ||
-      e.clipboardData.getData('text/plain');
-    if (html) {
-      const markdown = transformContent(html);
+    const htmlData = e.clipboardData.getData('text/html');
+    const plainData = e.clipboardData.getData('text/plain');
+    
+    if (htmlData) {
+      const markdown = transformContent(htmlData);
+      const output = markdownOutput;
+      output.textContent = markdown;
+      highlightMarkdown(output);
+      updatePreview(markdown);
+      showToast('Pasted and converted successfully!');
+    } else if (plainData) {
+      const markdown = convertLatexToUnicode(plainData);
       const output = markdownOutput;
       output.textContent = markdown;
       highlightMarkdown(output);
