@@ -347,8 +347,7 @@ const extractFracArguments = (text, firstClosingBraceIndex) => {
   const secondBraceMatch = remaining.match(/^\s*{/);
   if (!secondBraceMatch) return null;
 
-  const secondBraceIndex =
-    firstClosingBraceIndex + 1 + remaining.indexOf('{');
+  const secondBraceIndex = firstClosingBraceIndex + 1 + remaining.indexOf('{');
   const secondClosingBraceIndex = findClosingBrace(text, secondBraceIndex);
 
   if (secondClosingBraceIndex === NOT_FOUND) return null;
@@ -366,7 +365,8 @@ const replaceRecursiveCommand = (text, commandRegex, processor) => {
   const indices = findMatchIndices(text, commandRegex, 0);
   if (!indices) return text;
 
-  const { match, startIndex, firstBraceIndex, firstClosingBraceIndex } = indices;
+  const { match, startIndex, firstBraceIndex, firstClosingBraceIndex } =
+    indices;
   const arg1 = text.substring(firstBraceIndex + 1, firstClosingBraceIndex);
 
   const processMatch = () => {
@@ -506,25 +506,27 @@ const handleSimpleSubscripts = (text) =>
  */
 const handleDisplayStyle = (text) => {
   const DISPLAYSTYLE_START = '{\\displaystyle';
-  let currentIndex = text.indexOf(DISPLAYSTYLE_START);
-  while (currentIndex !== NOT_FOUND) {
-    const startBraceIndex = currentIndex;
-    const endBraceIndex = findClosingBrace(text, startBraceIndex);
-    if (endBraceIndex !== NOT_FOUND) {
-      const content = text.substring(
-        startBraceIndex + DISPLAYSTYLE_START.length,
-        endBraceIndex
-      );
-      text =
-        text.substring(0, startBraceIndex) +
-        content.trim() +
-        text.substring(endBraceIndex + 1);
-    } else {
-      break;
-    }
-    currentIndex = text.indexOf(DISPLAYSTYLE_START);
+  const currentIndex = text.indexOf(DISPLAYSTYLE_START);
+  if (currentIndex === NOT_FOUND) {
+    return text;
   }
-  return text;
+
+  const startBraceIndex = currentIndex;
+  const endBraceIndex = findClosingBrace(text, startBraceIndex);
+  if (endBraceIndex === NOT_FOUND) {
+    return text;
+  }
+
+  const content = text.substring(
+    startBraceIndex + DISPLAYSTYLE_START.length,
+    endBraceIndex
+  );
+  const updatedText =
+    text.substring(0, startBraceIndex) +
+    content.trim() +
+    text.substring(endBraceIndex + 1);
+
+  return handleDisplayStyle(updatedText);
 };
 
 /**
@@ -564,11 +566,7 @@ export const convertLatexToUnicode = (text) => {
     (match, arg1, arg2) => `(${arg1})/(${arg2})`
   );
 
-  const step5 = replaceRecursiveCommand(
-    step4,
-    /\\+text/,
-    (match, arg) => arg
-  );
+  const step5 = replaceRecursiveCommand(step4, /\\+text/, (match, arg) => arg);
 
   return replaceRecursiveCommand(step5, LATEX_SQRT_REGEX, (match, arg) =>
     arg.length === 1 ? `√${arg}` : `√(${arg})`
