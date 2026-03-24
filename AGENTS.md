@@ -2,6 +2,7 @@
 
 - study the README.md
 - run linting and formatting before committing.
+- commit and push if the code is functioning after your change.
 
 ## Add and update documentation
 

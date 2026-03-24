@@ -272,6 +272,8 @@ const TOAST_DURATION = 2000;
 const FADE_OUT_DURATION = 500;
 const MODAL_TRANSITION_MS = 300;
 const NOT_FOUND = -1;
+const MAX_HISTORY_LENGTH = 50;
+const TYPING_PAUSE_MS = 1000;
 
 /**
  * Regex Patterns
@@ -978,25 +980,102 @@ const handlePaste = (e, markdownOutput, previewArea, rawInput) => {
 };
 
 /**
+ * Updates the last saved state for undo history.
+ */
+const updateLastState = (state, markdownOutput, rawInput) => {
+  state.lastState = {
+    markdown: markdownOutput.textContent,
+    raw: rawInput.textContent
+  };
+};
+
+/**
+ * Pushes the current state into history.
+ */
+const pushHistory = (state) => {
+  state.history.push({ ...state.lastState });
+  if (state.history.length > MAX_HISTORY_LENGTH) {
+    state.history.shift();
+  }
+};
+
+/**
+ * Performs an undo operation.
+ */
+const performUndo = (state, markdownOutput, previewArea, rawInput) => {
+  const prevState = state.history.pop();
+  if (prevState !== undefined) {
+    markdownOutput.textContent = prevState.markdown;
+    rawInput.textContent = prevState.raw;
+    highlightMarkdown(markdownOutput);
+    updatePreview(previewArea, prevState.markdown);
+    restoreCursorPosition(markdownOutput, markdownOutput.textContent.length);
+    showToast('Undo successful');
+    state.isTyping = false;
+    updateLastState(state, markdownOutput, rawInput);
+  }
+};
+
+/**
+ * Handles input events on the markdown editor.
+ */
+const handleInput = (state, markdownOutput, previewArea, rawInput) => {
+  if (!state.isTyping) {
+    pushHistory(state);
+    state.isTyping = true;
+  }
+
+  const text = markdownOutput.textContent;
+  updatePreview(previewArea, text);
+
+  // Debounce highlighting to avoid breaking soft keyboards (especially on Android)
+  // where frequent DOM churn during composition causes issues.
+  clearTimeout(state.highlightTimeout);
+  state.highlightTimeout = setTimeout(() => {
+    highlightMarkdown(markdownOutput);
+  }, HIGHLIGHT_DELAY_MS);
+
+  // Reset typing state after a pause
+  clearTimeout(state.typingTimeout);
+  state.typingTimeout = setTimeout(() => {
+    state.isTyping = false;
+    updateLastState(state, markdownOutput, rawInput);
+  }, TYPING_PAUSE_MS);
+};
+
+/**
  * Sets up the markdown editor interactivity.
  */
 const setupMarkdownEditor = (markdownOutput, previewArea, rawInput) => {
-  const state = { highlightTimeout: undefined };
+  const state = {
+    highlightTimeout: undefined,
+    history: [],
+    isTyping: false,
+    typingTimeout: undefined,
+    lastState: {
+      markdown: markdownOutput.textContent,
+      raw: rawInput.textContent
+    }
+  };
 
   markdownOutput.addEventListener('paste', (e) => {
+    pushHistory(state);
+    state.isTyping = false;
     handlePaste(e, markdownOutput, previewArea, rawInput);
+    updateLastState(state, markdownOutput, rawInput);
+  });
+
+  markdownOutput.addEventListener('keydown', (e) => {
+    const isZ = e.key.toLowerCase() === 'z';
+    const isUndo = (e.ctrlKey || e.metaKey) && isZ && !e.shiftKey;
+    if (isUndo) {
+      e.preventDefault();
+      performUndo(state, markdownOutput, previewArea, rawInput);
+    }
   });
 
   markdownOutput.addEventListener('input', () => {
-    const text = markdownOutput.textContent;
-    updatePreview(previewArea, text);
-
-    // Debounce highlighting to avoid breaking soft keyboards (especially on Android)
-    // where frequent DOM churn during composition causes issues.
-    clearTimeout(state.highlightTimeout);
-    state.highlightTimeout = setTimeout(() => {
-      highlightMarkdown(markdownOutput);
-    }, HIGHLIGHT_DELAY_MS);
+    handleInput(state, markdownOutput, previewArea, rawInput);
   });
 };
 

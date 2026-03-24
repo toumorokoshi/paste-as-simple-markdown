@@ -219,13 +219,34 @@ const mockClipboard = () => {
   });
 };
 
+const mockSelection = () => {
+  const mockSelectionObj = {
+    rangeCount: 1,
+    getRangeAt: vi.fn().mockReturnValue({
+      cloneRange: vi.fn().mockReturnValue({
+        selectNodeContents: vi.fn(),
+        setEnd: vi.fn(),
+        toString: vi.fn().mockReturnValue('')
+      })
+    }),
+    removeAllRanges: vi.fn(),
+    addRange: vi.fn()
+  };
+  window.getSelection = vi.fn().mockReturnValue(mockSelectionObj);
+  document.createRange = vi.fn().mockReturnValue({
+    setStart: vi.fn(),
+    collapse: vi.fn()
+  });
+};
+
 const mockBrowserAPIs = () => {
   mockLocalStorage();
   mockMatchMedia();
   mockClipboard();
+  mockSelection();
 };
 
-const setupDOM = () => {
+const setupDOM = (initialMarkdown = '', initialRaw = '') => {
   document.body.innerHTML = `
     <header>
       <div id="header-actions">
@@ -236,8 +257,8 @@ const setupDOM = () => {
       </div>
     </header>
     <main class="split-pane">
-      <div id="raw-input"></div>
-      <div id="markdown-output" contenteditable="true"></div>
+      <div id="raw-input">${initialRaw}</div>
+      <div id="markdown-output" contenteditable="true">${initialMarkdown}</div>
       <div id="preview-area"></div>
     </main>
     <div id="help-modal" class="modal">
@@ -262,31 +283,11 @@ describe('IO Layer Integration - Paste', () => {
       value: { getData: (type) => (type === 'text/html' ? '<b>Bold</b>' : '') }
     });
 
-    // Mock getSelection and Range for cursor management
-    const mockSelection = {
-      rangeCount: 1,
-      getRangeAt: vi.fn().mockReturnValue({
-        cloneRange: vi.fn().mockReturnValue({
-          selectNodeContents: vi.fn(),
-          setEnd: vi.fn(),
-          toString: vi.fn().mockReturnValue('')
-        })
-      }),
-      removeAllRanges: vi.fn(),
-      addRange: vi.fn()
-    };
-    window.getSelection = vi.fn().mockReturnValue(mockSelection);
-    document.createRange = vi.fn().mockReturnValue({
-      setStart: vi.fn(),
-      collapse: vi.fn()
-    });
-
     markdownOutput.dispatchEvent(pasteEvent);
     expect(markdownOutput.textContent).toContain('**Bold**');
     expect(previewArea.innerHTML).toContain('<strong>Bold</strong>');
 
-    // After paste, restoreCursorPosition should have been called with the length of text
-    // We can't easily check the internal state of the range, but we verified the logic.
+    // After paste, restoreCursorPosition should have been called
     expect(window.getSelection).toHaveBeenCalled();
   });
 
@@ -344,7 +345,6 @@ describe('IO Layer Integration - Input', () => {
     vi.advanceTimersByTime(HIGHLIGHT_DELAY_MS);
 
     // Prism wraps bold text in <span class="token bold">...</span>
-    // And it also wraps punctuation like ** in spans.
     expect(markdownOutput.innerHTML).toContain('class="token bold"');
     expect(markdownOutput.textContent).toBe('**Bold Text**');
   });
@@ -470,5 +470,92 @@ describe('IO Layer Integration - Help Modal', () => {
     const escEvent = new KeyboardEvent('keydown', { key: 'Escape' });
     window.dispatchEvent(escEvent);
     expect(helpModal.classList.contains('show')).toBe(false);
+  });
+});
+
+describe('Undo Support - Paste', () => {
+  beforeEach(() => {
+    mockBrowserAPIs();
+  });
+
+  it('undoes a paste operation when Ctrl+Z is pressed', () => {
+    setupDOM('Initial', 'Initial Raw');
+    const markdownOutput = document.getElementById('markdown-output');
+    const rawInput = document.getElementById('raw-input');
+    
+    const pasteEvent = new Event('paste', { bubbles: true });
+    Object.defineProperty(pasteEvent, 'clipboardData', {
+      value: { getData: (type) => (type === 'text/plain' ? 'Pasted content' : '') }
+    });
+    markdownOutput.dispatchEvent(pasteEvent);
+    
+    expect(markdownOutput.textContent).toBe('Pasted content');
+    
+    const undoEvent = new KeyboardEvent('keydown', {
+      key: 'z',
+      ctrlKey: true,
+      bubbles: true
+    });
+    markdownOutput.dispatchEvent(undoEvent);
+    
+    expect(markdownOutput.textContent).toBe('Initial');
+    expect(rawInput.textContent).toBe('Initial Raw');
+  });
+
+  it('undoes a paste operation when Cmd+Z is pressed (Mac)', () => {
+    setupDOM('Initial', 'Initial Raw');
+    const markdownOutput = document.getElementById('markdown-output');
+    
+    const pasteEvent = new Event('paste', { bubbles: true });
+    Object.defineProperty(pasteEvent, 'clipboardData', {
+      value: { getData: (type) => (type === 'text/plain' ? 'Pasted content' : '') }
+    });
+    markdownOutput.dispatchEvent(pasteEvent);
+    
+    const undoEvent = new KeyboardEvent('keydown', {
+      key: 'z',
+      metaKey: true,
+      bubbles: true
+    });
+    markdownOutput.dispatchEvent(undoEvent);
+    
+    expect(markdownOutput.textContent).toBe('Initial');
+  });
+});
+
+describe('Undo Support - Input', () => {
+  beforeEach(() => {
+    mockBrowserAPIs();
+  });
+
+  it('undoes manual input', () => {
+    setupDOM('Initial', 'Initial Raw');
+    const markdownOutput = document.getElementById('markdown-output');
+    
+    markdownOutput.textContent = 'Initial changed';
+    markdownOutput.dispatchEvent(new Event('input', { bubbles: true }));
+    
+    const undoEvent = new KeyboardEvent('keydown', {
+      key: 'z',
+      ctrlKey: true,
+      bubbles: true
+    });
+    markdownOutput.dispatchEvent(undoEvent);
+    
+    expect(markdownOutput.textContent).toBe('Initial');
+  });
+
+  it('does not undo if there is no history', () => {
+    setupDOM('Initial');
+    const markdownOutput = document.getElementById('markdown-output');
+    
+    const undoEvent = new KeyboardEvent('keydown', {
+      key: 'z',
+      ctrlKey: true,
+      bubbles: true
+    });
+    markdownOutput.dispatchEvent(undoEvent);
+    
+    expect(markdownOutput.textContent).toBe('Initial');
   });
 });
