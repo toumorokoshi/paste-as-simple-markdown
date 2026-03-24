@@ -232,6 +232,7 @@ const setupDOM = () => {
         <button id="theme-toggle"><svg id="theme-toggle-icon"></svg></button>
         <button id="help-btn">Help</button>
         <button id="copy-btn">Copy</button>
+        <button id="copy-plaintext-btn">Copy Plaintext</button>
       </div>
     </header>
     <main class="split-pane">
@@ -364,6 +365,33 @@ describe('IO Layer Integration - Input and Copy', () => {
     copyBtn.click();
     // It should copy plain text, not HTML
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('### Heading');
+  });
+
+  it('copies rendered content to clipboard as plaintext on button click', async () => {
+    const markdownOutput = document.getElementById('markdown-output');
+    const copyPlaintextBtn = document.getElementById('copy-plaintext-btn');
+    const previewArea = document.getElementById('preview-area');
+
+    markdownOutput.textContent = '### Heading';
+    markdownOutput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Advance timers to trigger debounced highlighting
+    vi.advanceTimersByTime(HIGHLIGHT_DELAY_MS);
+
+    // Ensure preview is updated (marked.parse)
+    expect(previewArea.innerHTML).toContain('<h3>Heading</h3>');
+
+    // JSDOM does not support innerText, so we mock it
+    Object.defineProperty(previewArea, 'innerText', {
+      get() {
+        return this.textContent;
+      },
+      configurable: true
+    });
+
+    copyPlaintextBtn.click();
+    // It should copy the innerText of the preview area
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Heading\n');
   });
 });
 

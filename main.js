@@ -1014,6 +1014,44 @@ const setupThemeToggle = (themeToggle, themeToggleIcon) => {
 };
 
 /**
+ * Copies text to the clipboard with a fallback for older browsers.
+ * @param {string} text
+ * @param {string} successMessage
+ */
+const copyToClipboard = (text, successMessage) => {
+  if (!text) return;
+
+  const performCopy = (success) => {
+    if (success) showToast(successMessage);
+    else showToast('Failed to copy. Please copy manually.');
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => performCopy(true))
+      .catch(() => performCopy(false));
+  } else {
+    // Fallback for older browsers or non-secure contexts
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      performCopy(successful);
+    } catch {
+      performCopy(false);
+    }
+    document.body.removeChild(textArea);
+  }
+};
+
+/**
  * Initializes the application by setting up event listeners and DOM references.
  * @export
  */
@@ -1022,6 +1060,7 @@ export const setupApp = () => {
   const previewArea = document.getElementById('preview-area');
   const rawInput = document.getElementById('raw-input');
   const copyBtn = document.getElementById('copy-btn');
+  const copyPlaintextBtn = document.getElementById('copy-plaintext-btn');
   const themeToggle = document.getElementById('theme-toggle');
   const themeToggleIcon = document.getElementById('theme-toggle-icon');
   const helpBtn = document.getElementById('help-btn');
@@ -1034,6 +1073,7 @@ export const setupApp = () => {
     previewArea,
     rawInput,
     copyBtn,
+    copyPlaintextBtn,
     themeToggle,
     themeToggleIcon,
     helpBtn,
@@ -1052,37 +1092,11 @@ export const setupApp = () => {
   setupThemeToggle(themeToggle, themeToggleIcon);
 
   copyBtn.addEventListener('click', () => {
-    const text = markdownOutput.textContent;
-    if (!text) return;
+    copyToClipboard(markdownOutput.textContent, 'Markdown copied to clipboard!');
+  });
 
-    const performCopy = (success) => {
-      if (success) showToast('Markdown copied to clipboard!');
-      else showToast('Failed to copy. Please copy manually.');
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => performCopy(true))
-        .catch(() => performCopy(false));
-    } else {
-      // Fallback for older browsers or non-secure contexts
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-9999px';
-      textArea.style.top = '0';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        const successful = document.execCommand('copy');
-        performCopy(successful);
-      } catch {
-        performCopy(false);
-      }
-      document.body.removeChild(textArea);
-    }
+  copyPlaintextBtn.addEventListener('click', () => {
+    copyToClipboard(previewArea.innerText, 'Plaintext copied to clipboard!');
   });
 };
 

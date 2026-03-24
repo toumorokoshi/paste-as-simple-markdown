@@ -115,7 +115,8 @@ header h1 {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-#copy-btn {
+#copy-btn,
+#copy-plaintext-btn {
   background-color: var(--accent-color);
   color: white;
   border: none;
@@ -129,16 +130,19 @@ header h1 {
     box-shadow 0.2s;
 }
 
-#copy-btn:hover {
+#copy-btn:hover,
+#copy-plaintext-btn:hover {
   background-color: #2980b9;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-#copy-btn:active {
+#copy-btn:active,
+#copy-plaintext-btn:active {
   transform: scale(0.98);
 }
 
-#copy-btn:focus {
+#copy-btn:focus,
+#copy-plaintext-btn:focus {
   outline: 3px solid rgba(52, 152, 219, 0.5);
   outline-offset: 2px;
 }
