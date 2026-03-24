@@ -315,7 +315,7 @@ describe('IO Layer Integration - Paste', () => {
   });
 });
 
-describe('IO Layer Integration - Input and Copy', () => {
+describe('IO Layer Integration - Input', () => {
   beforeEach(() => {
     mockBrowserAPIs();
     setupDOM();
@@ -347,6 +347,18 @@ describe('IO Layer Integration - Input and Copy', () => {
     // And it also wraps punctuation like ** in spans.
     expect(markdownOutput.innerHTML).toContain('class="token bold"');
     expect(markdownOutput.textContent).toBe('**Bold Text**');
+  });
+});
+
+describe('IO Layer Integration - Copy', () => {
+  beforeEach(() => {
+    mockBrowserAPIs();
+    setupDOM();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('copies content to clipboard on button click (with highlighting)', async () => {

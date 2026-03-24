@@ -1,6 +1,7 @@
 ## ALWAYS RUN
 
 - study the README.md
+- run linting and formatting before committing.
 
 ## Add and update documentation
 
@@ -30,7 +31,6 @@ task.
 
 ## Linting
 
-- Always run linting and formatting before committing.
 - Formatting and lint fixing tools are available via `just fix`.
 - Linting tools are available via `just lint`.
 
