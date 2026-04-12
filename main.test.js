@@ -131,6 +131,19 @@ describe('convertLatexToUnicode - Scripts and Blocks', () => {
     expect(result).toBe('T is a space.');
   });
 
+  it('strips $ around a single character', () => {
+    expect(convertLatexToUnicode('$X$')).toBe('X');
+    expect(convertLatexToUnicode('$\\alpha$')).toBe('α');
+    // Multi-character should not be stripped
+    expect(convertLatexToUnicode('$x^2$')).toBe('$x²$');
+    expect(convertLatexToUnicode('$x_i$')).toBe('$xᵢ$');
+  });
+
+  it('correctly maps punctuation commands like \\$', () => {
+    expect(convertLatexToUnicode('\\$')).toBe('$');
+    expect(convertLatexToUnicode('\\{')).toBe('{');
+  });
+
   it('collapses short lines often found in Wikipedia pastes', () => {
     const input = 'U\n=\nU\ni\nis a set.';
     const result = convertLatexToUnicode(input);
@@ -482,22 +495,24 @@ describe('Undo Support - Paste', () => {
     setupDOM('Initial', 'Initial Raw');
     const markdownOutput = document.getElementById('markdown-output');
     const rawInput = document.getElementById('raw-input');
-    
+
     const pasteEvent = new Event('paste', { bubbles: true });
     Object.defineProperty(pasteEvent, 'clipboardData', {
-      value: { getData: (type) => (type === 'text/plain' ? 'Pasted content' : '') }
+      value: {
+        getData: (type) => (type === 'text/plain' ? 'Pasted content' : '')
+      }
     });
     markdownOutput.dispatchEvent(pasteEvent);
-    
+
     expect(markdownOutput.textContent).toBe('Pasted content');
-    
+
     const undoEvent = new KeyboardEvent('keydown', {
       key: 'z',
       ctrlKey: true,
       bubbles: true
     });
     markdownOutput.dispatchEvent(undoEvent);
-    
+
     expect(markdownOutput.textContent).toBe('Initial');
     expect(rawInput.textContent).toBe('Initial Raw');
   });
@@ -505,20 +520,22 @@ describe('Undo Support - Paste', () => {
   it('undoes a paste operation when Cmd+Z is pressed (Mac)', () => {
     setupDOM('Initial', 'Initial Raw');
     const markdownOutput = document.getElementById('markdown-output');
-    
+
     const pasteEvent = new Event('paste', { bubbles: true });
     Object.defineProperty(pasteEvent, 'clipboardData', {
-      value: { getData: (type) => (type === 'text/plain' ? 'Pasted content' : '') }
+      value: {
+        getData: (type) => (type === 'text/plain' ? 'Pasted content' : '')
+      }
     });
     markdownOutput.dispatchEvent(pasteEvent);
-    
+
     const undoEvent = new KeyboardEvent('keydown', {
       key: 'z',
       metaKey: true,
       bubbles: true
     });
     markdownOutput.dispatchEvent(undoEvent);
-    
+
     expect(markdownOutput.textContent).toBe('Initial');
   });
 });
@@ -531,31 +548,31 @@ describe('Undo Support - Input', () => {
   it('undoes manual input', () => {
     setupDOM('Initial', 'Initial Raw');
     const markdownOutput = document.getElementById('markdown-output');
-    
+
     markdownOutput.textContent = 'Initial changed';
     markdownOutput.dispatchEvent(new Event('input', { bubbles: true }));
-    
+
     const undoEvent = new KeyboardEvent('keydown', {
       key: 'z',
       ctrlKey: true,
       bubbles: true
     });
     markdownOutput.dispatchEvent(undoEvent);
-    
+
     expect(markdownOutput.textContent).toBe('Initial');
   });
 
   it('does not undo if there is no history', () => {
     setupDOM('Initial');
     const markdownOutput = document.getElementById('markdown-output');
-    
+
     const undoEvent = new KeyboardEvent('keydown', {
       key: 'z',
       ctrlKey: true,
       bubbles: true
     });
     markdownOutput.dispatchEvent(undoEvent);
-    
+
     expect(markdownOutput.textContent).toBe('Initial');
   });
 });

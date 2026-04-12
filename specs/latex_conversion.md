@@ -34,6 +34,7 @@ We must use constants to map LaTeX keywords to Unicode.
 
 ### Structural Operators
 
+- **Single Symbols**: Dollar sign wrappers for single-character math symbols (e.g., `$X$`, `$\alpha$`) are stripped so they render plainly as `X`, `α`, etc. Multi-character expressions remain wrapped in dollar signs.
 - **Superscripts**: `x^2` -> `x²`, `y^3` -> `y³`.
   - Note: Simple superscripts (0-9, +,-,n) can use Unicode superscripts (`⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻ⁿ`).
   - If a superscript block is complex (e.g., `x^{a+b}`), map it to `x^(a+b)`.

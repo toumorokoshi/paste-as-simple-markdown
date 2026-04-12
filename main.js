@@ -280,7 +280,7 @@ const TYPING_PAUSE_MS = 1000;
  */
 const LATEX_LIMITS_REGEX =
   /\\+(sum|int|prod)(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?|\s*\^(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^]))(?:\s*_(?:{([^}]*)}|(\\+[a-zA-Z]+|[^\s_{}^])))?)?/g;
-const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+|[{}_^()[]$!%&])/g;
+const LATEX_SYMBOL_REGEX = /\\+([a-zA-Z]+|[{}_^()[\]$!%&])/g;
 const LATEX_SIMPLE_SUPERSCRIPT_REGEX =
   /(\w|\))?\^({([a-zA-Z0-9+\-=()]+)}|([a-zA-Z0-9+\-=()]))/g;
 const LATEX_COMPLEX_SUPERSCRIPT_REGEX = /(\w|\))?\^{/;
@@ -681,8 +681,10 @@ export const convertLatexToUnicode = (text) => {
 
   const step7 = handleSymbols(step6);
 
-  // Strip remaining LaTeX-style braces that are just grouping
-  return step7.replace(/{([^{}\n]+)}/g, '$1');
+  const step8 = step7.replace(/{([^{}\n]+)}/g, '$1');
+
+  // Strip $ around a single symbol/character (e.g., $X$ -> X)
+  return step8.replace(/\$([^$\s])\$/g, '$1');
 };
 
 /**
@@ -961,7 +963,7 @@ const handlePaste = (e, markdownOutput, previewArea, rawInput) => {
   try {
     const { markdown, raw } = result;
     rawInput.textContent = raw;
-    
+
     const output = markdownOutput;
     output.textContent = markdown;
 
@@ -1171,7 +1173,10 @@ export const setupApp = () => {
   setupThemeToggle(themeToggle, themeToggleIcon);
 
   copyBtn.addEventListener('click', () => {
-    copyToClipboard(markdownOutput.textContent, 'Markdown copied to clipboard!');
+    copyToClipboard(
+      markdownOutput.textContent,
+      'Markdown copied to clipboard!'
+    );
   });
 
   copyPlaintextBtn.addEventListener('click', () => {
